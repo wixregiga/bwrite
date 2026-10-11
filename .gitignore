@@ -427,3 +427,20 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Vite build output and Playwright artifacts
+dist/
+dist-server/
+test-results/
+playwright-report/
+
+# ArcLint hook state is local to each machine
+.arclint/cache/
+
+# Agent worktrees and local feature drafts stay out of the repository
+.claude/worktrees/
+.features/
+
+# The bwrite command lives in bin/, which the Visual Studio rules above would ignore
+!/bin/
+!/bin/bwrite.mjs

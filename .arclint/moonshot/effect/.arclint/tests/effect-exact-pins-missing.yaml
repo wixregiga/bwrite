@@ -1,0 +1,9 @@
+rule: effect-exact-pins
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1"}, "devDependencies": {}}'
+  src/contexts/authoring/domain/document.ts: 'export const value = 1;
+
+    '
+expect:
+- path: package.json
+  message: effect must be declared with one exact version

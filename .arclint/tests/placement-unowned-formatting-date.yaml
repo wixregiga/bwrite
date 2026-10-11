@@ -1,0 +1,9 @@
+rule: placement
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0"}}'
+  src/shared/formatting/date.ts: 'export const value = 1;
+
+    '
+expect:
+- path: src/shared/formatting/date.ts
+  message: Source file belongs to no Zone; move it into the segment that owns its responsibility

@@ -1,0 +1,2 @@
+Unmodified files from https://github.com/Effect-TS/effect-smol at commit 3a1128c7684e04d34d9f541f77adaac38a513056:
+.github/workflows/check.yml, .github/workflows/release.yml, .github/workflows/snapshot.yml, docker-compose.yaml

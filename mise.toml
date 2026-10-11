@@ -1,0 +1,77 @@
+[tools]
+node = "24"
+
+[tasks.install]
+description = "Install dependencies and the Chromium build Playwright uses"
+run = ["npm ci", "npx playwright install chromium"]
+
+[tasks.dev]
+description = "Start the BWrite prototype on the Vite dev server"
+run = "npm run dev"
+
+[tasks.bwrite]
+description = "Serve the built BWrite page and its API for the folder this is started in (pass --root, --port after --)"
+dir = "{{cwd}}"
+run = "node {{config_root}}/bin/bwrite.mjs"
+
+[tasks.test]
+description = "Run the unit tests"
+run = "npm test"
+
+[tasks.e2e]
+description = "Run the Playwright acceptance tests"
+run = "npm run test:e2e"
+
+[tasks.check]
+description = "Typecheck, unit tests, production build, and acceptance tests"
+run = "npm run check"
+
+[tasks."vocab:sync"]
+description = "Refresh BWrite's snapshot of ArcLint's DDD vocabulary from the installed arclint"
+run = "node scripts/arclintVocabulary.mjs sync"
+
+[tasks."vocab:check"]
+description = "Fail when BWrite's snapshot of ArcLint's DDD vocabulary differs from the installed arclint"
+run = "node scripts/arclintVocabulary.mjs check"
+
+[tasks."check:extensions"]
+description = "Type-check the arclint SDK extensions under strict TypeScript"
+run = "npx --no-install tsc -p .arclint/extensions/tsconfig.json"
+
+[tasks."test:rules"]
+description = "Run the architecture rule tests"
+run = "arclint rules test"
+
+[tasks."check:architecture"]
+description = "Evaluate the architecture ruleset against this repository"
+run = "arclint check ."
+
+[tasks."install:stage2"]
+description = "Install the pinned Effect dependencies of the inactive Stage 2 validation"
+dir = ".arclint/moonshot/effect/validation/effect-api"
+run = "npm ci --no-audit --no-fund --strict-peer-deps"
+
+[tasks."check:stage2-delta"]
+description = "Prove the inactive Stage 2 ruleset is Stage 1 plus the declared Effect delta"
+run = "node .arclint/moonshot/effect/scripts/check-stage2-delta.ts"
+
+[tasks."check:unstable-symbols"]
+description = "Prove effect-stable-core matches the installed Effect declarations"
+depends = ["install:stage2"]
+run = "node .arclint/moonshot/effect/scripts/unstable-symbols.ts .arclint/moonshot/effect/validation/effect-api/node_modules/effect --check"
+
+[tasks."test:stage2"]
+description = "Run the Stage 2 rule tests (the symlinked extensions need a cold cache)"
+dir = ".arclint/moonshot/effect"
+run = ["rm -rf .arclint/cache", "arclint rules test"]
+
+[tasks."test:effect-api"]
+description = "Compile and run one complete Effect 4.0.2 path against real files"
+depends = ["install:stage2"]
+dir = ".arclint/moonshot/effect/validation/effect-api"
+run = ["npx --no-install tsc -p tsconfig.json", "node --test workflow-source.test.ts"]
+
+[tasks.gates]
+description = "Every architecture gate, in dependency order"
+depends = ["check:extensions", "test:rules", "check:architecture", "check:stage2-delta", "check:unstable-symbols", "test:stage2", "test:effect-api"]
+run = "echo all gates passed"
