@@ -1,0 +1,24 @@
+{
+  "name": "effect-api-validation",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test workflow-source.test.ts"
+  },
+  "dependencies": {
+    "effect": "4.0.2",
+    "@effect/platform-node": "4.0.2",
+    "yaml": "2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.7.2",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "@effect/platform-node-shared": "4.0.2"
+  }
+}

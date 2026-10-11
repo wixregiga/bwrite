@@ -1,0 +1,7 @@
+rule: effect-exact-pins
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "effect": "4.0.2", "@effect/platform-node": "4.0.2", "@effect/platform-browser": "4.0.2"}, "devDependencies": {"@effect/vitest": "4.0.2"}, "overrides": {"@effect/platform-node-shared": "4.0.2"}}'
+  src/contexts/authoring/domain/document.ts: 'export const value = 1;
+
+    '
+expect: []

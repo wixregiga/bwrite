@@ -1,0 +1,423 @@
+# Stage 1: domain-driven vertical slices for a TypeScript browser app with a
+# Node companion process. LAYOUT.md explains every Zone and decision.
+#
+# Reading order for agents:
+#   1. zones: where a responsibility lives.
+#   2. *-dependencies: which Zones a Zone may import.
+#   3. *-platform and *-packages: which runtime and third-party APIs it may use.
+#   4. boundary rules: imported_by, independent, acyclic.
+#   5. vocabulary rules: recorded domain terms map to predictable paths.
+#   6. readability rules: names, barrels, exports, cycles, placement.
+runtime: [ts]
+scan:
+  exclude:
+    - node_modules/**
+    - .arclint/**
+    - dist/**
+    - coverage/**
+    # Generated output and agent scratch copies: not source to judge.
+    - .claude/**
+    - dist-server/**
+    - test-results/**
+    - playwright-report/**
+    # Colocated unit tests and their harness observe subjects across zones by
+    # design; arclint's Zone graph and built-in rules count every scanned import
+    # edge, so they are not scanned. Production code stays fully judged, and the
+    # acceptance suites under tests/ stay scanned and judged.
+    - "src/**/*.test.ts"
+    - "src/**/*.test.tsx"
+    - tests/support/unit/**
+  unknown_imports: error
+
+zones:
+  app:
+    description: Browser composition root. Creates the React root, constructs browser adapters, provides use cases to the UI.
+    paths: src/app/**
+  pages:
+    description: One folder per screen. Composes context public APIs into a route; holds no product rules.
+    paths: src/pages/**
+  shared:
+    description: Browser mechanisms with no product meaning, one folder per named concern.
+    paths:
+      - src/shared/presentation/**
+      - src/shared/observability/**
+  transport:
+    description: Process-neutral wire mechanisms with no product meaning (envelope, error shape, decoding primitives).
+    paths: src/shared/transport/**
+  public_api:
+    description: The one consumer entrypoint of a bounded context, read by pages and the browser root.
+    paths: src/contexts/*/index.ts
+  domain:
+    description: Process-neutral model of one bounded context. Aggregates, entities, value objects, events, domain services, repository ports.
+    paths: src/contexts/*/domain/**
+  application:
+    description: Process-neutral use cases of one bounded context and the ports they need beyond repositories.
+    paths: src/contexts/*/application/**
+  formats:
+    description: Process-neutral file-format codecs translating file text to and from domain values.
+    paths: src/contexts/*/formats/**
+  contracts:
+    description: Wire schema of one context's HTTP endpoints and server-sent events, with runtime decoders.
+    paths: src/contexts/*/contracts/**
+  browser:
+    description: Browser driven adapters of one context (HTTP client of the Node process, localStorage, EventSource).
+    paths: src/contexts/*/browser/**
+  node:
+    description: Node adapters of one context. Driving HTTP and SSE handlers and driven filesystem and command-line tool adapters.
+    paths: src/contexts/*/node/**
+  ui:
+    description: React views of one context, calling use cases and rendering domain values.
+    paths: src/contexts/*/ui/**
+  editor:
+    description: CodeMirror 6 integration of one context, translating editor transactions into use-case calls.
+    paths: src/contexts/*/editor/**
+  server_app:
+    description: Node composition root. Starts the HTTP server, mounts each context's handlers, owns process lifecycle.
+    paths: server/app/**
+  server_shared:
+    description: Node mechanisms with no product meaning (atomic file write, process execution, SSE stream writing).
+    paths: server/shared/**
+  acceptance_tests:
+    description: Integration suites across the process boundary and Playwright suites of observable user behavior.
+    paths: tests/**
+
+rules:
+  # ---------------------------------------------------------------- dependencies
+  # Internal allow-lists over every scanned file. Colocated unit tests and
+  # tests/support/unit/ are not scanned (see scan.exclude); acceptance suites
+  # and their wire harness are, so they still test only through the wire.
+  domain-dependencies:
+    on: domain
+    imports: {internal: []}
+    severity: error
+    rationale: The model reads as itself; no use case, adapter, view or wire shape can leak into a domain decision.
+  application-dependencies:
+    on: application
+    imports: {internal: [domain]}
+    severity: error
+    rationale: Use cases orchestrate the model through ports and never learn which adapter fulfils them.
+  formats-dependencies:
+    on: formats
+    imports: {internal: [domain, application]}
+    severity: error
+    rationale: A codec translates text to domain values and implements an application port, nothing else.
+  contracts-dependencies:
+    on: contracts
+    imports: {internal: [transport]}
+    severity: error
+    rationale: The wire schema evolves on its own clock; mapping to the model happens in adapters, so a model rename never silently changes the wire.
+  transport-dependencies:
+    on: transport
+    imports: {internal: []}
+    severity: error
+    rationale: Wire mechanisms are leaves both processes can read without dragging product code along.
+  browser-dependencies:
+    on: browser
+    imports: {internal: [domain, application, formats, contracts, transport]}
+    severity: error
+    rationale: A browser adapter implements an inward port with wire and format codecs; it never reaches views or Node code.
+  node-dependencies:
+    on: node
+    imports: {internal: [domain, application, formats, contracts, transport, server_shared]}
+    severity: error
+    rationale: Node handlers and adapters implement inward ports on Node mechanisms; they never reach browser code.
+  ui-dependencies:
+    on: ui
+    imports: {internal: [domain, application, editor, shared]}
+    severity: error
+    rationale: A view calls use cases and renders domain values without choosing an HTTP, storage or file implementation.
+  editor-dependencies:
+    on: editor
+    imports: {internal: [domain, application]}
+    severity: error
+    rationale: CodeMirror state stays a view of the model; persistence and wire decisions are out of its reach.
+  public_api-dependencies:
+    on: public_api
+    imports: {internal: [domain, application, ui, editor]}
+    severity: error
+    rationale: Consumers see model types, use cases, views and editor extensions, never an adapter.
+  pages-dependencies:
+    on: pages
+    imports: {internal: [public_api, shared]}
+    severity: error
+    rationale: A screen composes contexts through their public API without learning their folder structure.
+  shared-dependencies:
+    on: shared
+    imports: {internal: []}
+    severity: error
+    rationale: Shared mechanisms cannot become a second home for product decisions.
+  app-dependencies:
+    on: app
+    imports: {internal: [pages, public_api, domain, application, formats, browser, transport, shared]}
+    severity: error
+    rationale: The browser root is the one place that pairs ports with browser adapters.
+  server_shared-dependencies:
+    on: server_shared
+    imports: {internal: [transport]}
+    severity: error
+    rationale: Node mechanisms carry no product meaning and stay reusable by every context's Node adapters.
+  server_app-dependencies:
+    on: server_app
+    imports: {internal: [domain, application, formats, contracts, transport, node, server_shared]}
+    severity: error
+    rationale: The Node root is the one place that pairs ports with Node adapters and mounts handlers.
+  acceptance_tests-dependencies:
+    on: acceptance_tests
+    imports: {internal: [contracts, transport, server_app]}
+    severity: error
+    rationale: Acceptance suites observe behavior through the wire, the server entrypoint and the browser, never through internals.
+
+  # ---------------------------------------------------------------- platform
+  # Runtime and third-party policy. Colocated unit tests under src/ are not
+  # scanned; the Node zones exclude test files under server/, because a test
+  # runner is a dependency of the test, not of the subject.
+  domain-platform:
+    on: domain
+    imports: {external: forbid, stdlib: forbid}
+    severity: error
+    rationale: Domain rules run unchanged in the browser, in Node and in a unit test with no package installed.
+  application-platform:
+    on: application
+    imports: {external: forbid, stdlib: forbid}
+    severity: error
+    rationale: Use cases run in either process; every capability they need arrives through a port.
+  formats-platform:
+    on: formats
+    imports: {stdlib: forbid}
+    severity: error
+    rationale: Both processes parse the same file the same way, so a codec cannot depend on Node.
+  formats-packages:
+    on: formats
+    uses: ddd/packages
+    with: {packages: [yaml]}
+    severity: error
+    rationale: The file-format vocabulary is one declared parser, so agents never meet a second YAML library.
+  contracts-platform:
+    on: contracts
+    imports: {external: forbid, stdlib: forbid}
+    severity: error
+    rationale: Both processes load the same decoders, so wire schema depends on no runtime.
+  transport-platform:
+    on: transport
+    imports: {external: forbid, stdlib: forbid}
+    severity: error
+    rationale: Wire mechanisms load in both processes.
+  browser-platform:
+    on: browser
+    imports: {external: forbid, stdlib: forbid}
+    severity: error
+    rationale: Browser adapters use the platform's own fetch, EventSource and localStorage; no Node module and no client SDK.
+  node-platform:
+    on: node
+    imports: {external: forbid}
+    severity: error
+    rationale: Node adapters use Node's own modules; YAML belongs to formats and nothing else is needed.
+  ui-platform:
+    on: ui
+    imports: {stdlib: forbid}
+    severity: error
+    rationale: Views run in the browser only.
+  ui-packages:
+    on: ui
+    uses: ddd/packages
+    with: {packages: [react]}
+    severity: error
+    rationale: Views speak React only; a new UI library is an architectural decision recorded here, not a drive-by import.
+  editor-platform:
+    on: editor
+    imports: {stdlib: forbid}
+    severity: error
+    rationale: The editor runs in the browser only.
+  editor-packages:
+    on: editor
+    uses: ddd/packages
+    with: {packages: ['@codemirror/*', '@lezer/*']}
+    severity: error
+    rationale: Editor code speaks CodeMirror 6 and its Lezer parsers only.
+  public_api-platform:
+    on: public_api
+    imports: {external: forbid, stdlib: forbid}
+    severity: error
+    rationale: A public API re-exports its context; it adds no dependency of its own.
+  pages-platform:
+    on: pages
+    imports: {stdlib: forbid}
+    severity: error
+    rationale: Screens run in the browser only.
+  pages-packages:
+    on: pages
+    uses: ddd/packages
+    with: {packages: [react]}
+    severity: error
+    rationale: Screens compose React views and nothing else.
+  shared-platform:
+    on: shared
+    imports: {stdlib: forbid}
+    severity: error
+    rationale: Browser mechanisms run in the browser only.
+  shared-packages:
+    on: shared
+    uses: ddd/packages
+    with: {packages: [react]}
+    severity: error
+    rationale: Presentation primitives are React components; observability uses platform APIs.
+  app-platform:
+    on: app
+    imports: {stdlib: forbid}
+    severity: error
+    rationale: The browser root runs in the browser only.
+  app-packages:
+    on: app
+    uses: ddd/packages
+    with: {packages: [react, react-dom/client]}
+    severity: error
+    rationale: Mounting React is the root's only third-party concern.
+  server_shared-platform:
+    on: server_shared
+    imports: {external: forbid}
+    severity: error
+    rationale: Node 24 provides HTTP, filesystem and process APIs; a framework would be a second vocabulary.
+    exclude: {paths: ['**/*.test.ts'], reason: A unit test imports its runner; the subject keeps the full restriction.}
+  server_app-platform:
+    on: server_app
+    imports: {external: forbid}
+    severity: error
+    rationale: The Node root composes Node modules and project code only.
+    exclude: {paths: ['**/*.test.ts'], reason: A unit test imports its runner; the subject keeps the full restriction.}
+
+  # ---------------------------------------------------------------- boundaries
+  browser-imported-by-root:
+    on: browser
+    imported_by: [app]
+    severity: error
+    rationale: Only the browser root chooses a browser adapter; views and screens cannot pick persistence.
+  node-imported-by-root:
+    on: node
+    imported_by: [server_app]
+    severity: error
+    rationale: Node code never reaches the browser bundle, and only the Node root mounts it.
+  server_shared-imported-by-node:
+    on: server_shared
+    imported_by: [node, server_app]
+    severity: error
+    rationale: Node mechanisms stay on the Node side of the process wall.
+  contracts-imported-by-wire:
+    on: contracts
+    imported_by: [browser, node, server_app, acceptance_tests]
+    severity: error
+    rationale: Only code that sends or receives the wire sees its schema; views work with domain values.
+  context-independence:
+    independent: [src/contexts/*]
+    severity: error
+    rationale: One context changes without reading another. A recorded context-map relation is the only admissible exception, granted by a reasoned exclusion.
+  zone-acyclic:
+    acyclic: {}
+    severity: error
+    rationale: The Zone graph has one direction, so a reader can always start at the model and walk outward.
+
+  # ---------------------------------------------------------------- vocabulary
+  recorded-contexts:
+    uses: ddd/recorded-contexts
+    with: {root: src/contexts/}
+    severity: error
+    rationale: A bounded context exists in the recorded domain before it exists as a folder, so folder names and the ubiquitous language never drift.
+  context-public-api:
+    structure:
+      each: domain.contexts
+      require: ['src/contexts/{name:kebab-case}/index.ts']
+    on: public_api
+    severity: error
+    rationale: Every recorded context has one public API at a path derived from its name.
+  context-model:
+    structure:
+      each: domain.contexts
+      require: ['src/contexts/{name:kebab-case}/domain/*.ts']
+    on: domain
+    severity: error
+    rationale: Every recorded context has a model; a context without domain code is a folder, not a boundary.
+  aggregate-files:
+    structure:
+      each: domain.aggregates
+      require: ['src/contexts/*/domain/{name:kebab-case}.ts']
+    on: domain
+    severity: error
+    rationale: An aggregate root lives in a file named for it, so any agent opens the right file from the term alone.
+  value-object-files:
+    structure:
+      each: domain.value_objects
+      require: ['src/contexts/*/domain/{name:kebab-case}.ts']
+    on: domain
+    severity: error
+    rationale: A value object and its invariants live in a file named for the recorded term.
+  event-files:
+    structure:
+      each: domain.events
+      require: ['src/contexts/*/domain/{name:kebab-case}.ts']
+    on: domain
+    severity: error
+    rationale: A domain event is a recorded term with a file named for it.
+
+  # ---------------------------------------------------------------- readability
+  file-names:
+    naming: 'regex:^[a-z][a-z0-9]*(-[a-z0-9]+)*(\.test)?$ | regex:^[a-z][a-z0-9]*(-[a-z0-9]+)*\.d$'
+    files: ['**/*.ts', '**/*.tsx']
+    on: [app, pages, shared, transport, public_api, domain, application, formats, contracts, browser, node, ui, editor, server_app, server_shared, acceptance_tests]
+    severity: error
+    rationale: One lowercase hyphenated spelling makes every path predictable on every filesystem and for every tool.
+  no-grab-bags:
+    structure:
+      forbid:
+        - '**/utils.*'
+        - '**/utils/**'
+        - '**/helpers.*'
+        - '**/helpers/**'
+        - '**/misc.*'
+        - '**/misc/**'
+        - '**/common.*'
+        - '**/common/**'
+        - '**/lib/**'
+        - '**/types.*'
+        - '**/types/**'
+        - '**/constants.*'
+        - '**/constants/**'
+    on: [app, pages, shared, transport, public_api, domain, application, formats, contracts, browser, node, ui, editor, server_app, server_shared, acceptance_tests]
+    severity: error
+    rationale: A file is named for the concept it holds; a bucket name tells no reader where a change belongs.
+  no-nested-barrels:
+    structure:
+      forbid: ['**/index.ts', '**/index.tsx']
+    on: [app, pages, shared, transport, domain, application, formats, contracts, browser, node, ui, editor, server_app, server_shared, acceptance_tests]
+    severity: error
+    rationale: A context has exactly one entrypoint; inner barrels hide where a symbol is defined and invite cycles.
+  explicit-public-api:
+    content:
+      forbid: '^\s*export\s+(type\s+)?\*'
+    on: public_api
+    severity: error
+    rationale: A public API lists every exported name, so its surface is readable in one file and grows only on purpose.
+  named-exports:
+    content:
+      forbid: '^\s*export\s+default\b|\bas\s+default\b'
+    on: [app, pages, shared, transport, public_api, domain, application, formats, contracts, browser, node, ui, editor, server_app, server_shared, acceptance_tests]
+    severity: error
+    rationale: One name per concept across every import site keeps search and rename exact for people and agents.
+  pure-source:
+    structure:
+      forbid: ['**/*.tsx']
+    on: [transport, public_api, domain, application, formats, contracts, browser, node, editor, server_app, server_shared, acceptance_tests]
+    severity: error
+    rationale: JSX appears only where React renders; everywhere else a .tsx file would mislead about what the module does.
+  file-cycles:
+    uses: ddd/file-cycles
+    severity: error
+    rationale: A reader follows imports in one direction without reconstructing mutually dependent files.
+  placement:
+    uses: ddd/placement
+    with: {roots: [src/, server/, tests/]}
+    severity: error
+    rationale: Every source file has exactly one owner, so no file escapes the rules by sitting outside a Zone.
+  test-placement:
+    uses: ddd/test-placement
+    with: {suites: [tests/integration/, tests/e2e/], support: tests/support/}
+    severity: error
+    rationale: A unit test sits beside its subject, acceptance suites have named homes, and production code never imports test code.

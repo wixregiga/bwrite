@@ -1,0 +1,14 @@
+rule: effect-stable-core
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0", "effect": "4.0.2", "@effect/platform-node": "4.0.2", "@effect/platform-browser": "4.0.2", "effector": "23.4.4"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0", "@effect/vitest": "4.0.2"}}'
+  src/contexts/authoring/formats/yaml-document-format.ts: 'import * as Effect from ''effect/Effect'';
+
+    import * as Schema from ''effect/Schema'';
+
+    export const A = Schema.IpAddressFromString;
+
+    '
+expect:
+- path: src/contexts/authoring/formats/yaml-document-format.ts
+  line: 3
+  message: forbidden content matching /\bEffect\.(?:withErrorReporting|withExecutionPlan)\b|\bStream\.(?:limitBytes|withExecutionPlan)\b|\bSchema\.(?:ByteSize|ByteSizeFromBigInt|ByteSizeFromNumber|ByteSizeFromString|Cookie|Cookies|Graph|Headers|InetAddress|InetAddressFromString|InetAddressV4|InetAddressV6|IpAddress|IpAddressFromString|IpInterface|IpInterfaceFromString|IpLinkLocalAddress|IpLinkLocalAddressFromString|IpLoopbackAddress|IpLoopbackAddressFromString|IpMulticastAddress|IpMulticastAddressFromString|IpNetwork|IpNetworkFromString|IpUnicastAddress|IpUnicastAddressFromString|IpUnspecifiedAddress|IpUnspecifiedAddressFromString|Ipv4Address|Ipv4AddressFromString|Ipv4BroadcastAddress|Ipv4BroadcastAddressFromString|Ipv4Interface|Ipv4InterfaceFromString|Ipv4Network|Ipv4NetworkFromString|Ipv4PrivateAddress|Ipv4PrivateAddressFromString|Ipv6Address|Ipv6AddressFromString|Ipv6Interface|Ipv6InterfaceFromString|Ipv6Network|Ipv6NetworkFromString|Ipv6UniqueLocalAddress|Ipv6UniqueLocalAddressFromString|JsonFromUrlParamsField|MacAddress|MacAddressFromString|MacBroadcastAddress|MacBroadcastAddressFromString|MacLocallyAdministeredAddress|MacLocallyAdministeredAddressFromString|MacMulticastAddress|MacMulticastAddressFromString|MacUnicastAddress|MacUnicastAddressFromString|MacUniversallyAdministeredAddress|MacUniversallyAdministeredAddressFromString|RecordFromCookies|RecordFromUrlParams|SocketAddress|UnixPathAddress|UnixPathAddressFromString|UrlParams)\b/

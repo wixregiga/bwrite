@@ -1,0 +1,24 @@
+rule: effect-run-at-roots
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0", "effect": "4.0.2", "@effect/platform-node": "4.0.2", "@effect/platform-browser": "4.0.2", "effector": "23.4.4"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0", "@effect/vitest": "4.0.2"}}'
+  src/contexts/authoring/ui/document-panel.tsx: 'import * as Effect from ''effect/Effect'';
+
+    import * as Schema from ''effect/Schema'';
+
+    export const r = Effect.runPromise(Effect.void);
+
+    '
+  src/contexts/authoring/node/file-document-repository.ts: 'import * as Effect from ''effect/Effect'';
+
+    import * as Schema from ''effect/Schema'';
+
+    export const s = Effect.runSync(Effect.void);
+
+    '
+expect:
+- path: src/contexts/authoring/ui/document-panel.tsx
+  line: 3
+  message: forbidden content matching /\bEffect\.run(Callback|Fork|Promise|Sync)\w*\b/
+- path: src/contexts/authoring/node/file-document-repository.ts
+  line: 3
+  message: forbidden content matching /\bEffect\.run(Callback|Fork|Promise|Sync)\w*\b/

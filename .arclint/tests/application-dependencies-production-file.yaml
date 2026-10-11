@@ -1,0 +1,25 @@
+# Production code importing across zones, or importing the unscanned unit-test
+# harness, stays a finding.
+rule: application-dependencies
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0"}}'
+  src/contexts/authoring/browser/workspace-store.ts: 'export const value = 1;
+
+    '
+  tests/support/unit/workspace-builders.ts: 'export const value = 1;
+
+    '
+  src/contexts/authoring/application/workspace-reducer.ts: 'import { value as v0 } from ''../browser/workspace-store'';
+
+    import { value as v1 } from ''../../../../tests/support/unit/workspace-builders'';
+
+    export const value = v0 + v1;
+
+    '
+expect:
+- path: src/contexts/authoring/application/workspace-reducer.ts
+  line: 1
+  message: import "../browser/workspace-store" resolves to Zone(s) ["browser"], not in the allow-list of Zone "application"
+- path: src/contexts/authoring/application/workspace-reducer.ts
+  line: 2
+  message: import "../../../../tests/support/unit/workspace-builders" is internal but does not resolve into the repository, and Zone "application" restricts internal imports

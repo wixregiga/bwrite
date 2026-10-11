@@ -1,0 +1,1301 @@
+{
+  "$defs": {
+    "acyclicRule": {
+      "additionalProperties": false,
+      "description": "An acyclic Rule: forbids dependency cycles among declared Zones.",
+      "properties": {
+        "acyclic": {
+          "description": "Cycle scope: a list of declared Zones, or an empty mapping for every declared Zone; inside a Pattern the empty mapping means every Zone the Pattern declares.",
+          "oneOf": [
+            {
+              "description": "The declared Zones in scope; at least two, no duplicates.",
+              "items": {
+                "$ref": "#/$defs/zoneName",
+                "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+              },
+              "minItems": 2,
+              "type": "array",
+              "uniqueItems": true
+            },
+            {
+              "additionalProperties": false,
+              "description": "The empty mapping: every declared Zone is in scope.",
+              "properties": {},
+              "type": "object"
+            }
+          ]
+        },
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "required": [
+        "acyclic"
+      ],
+      "type": "object"
+    },
+    "boundPaths": {
+      "description": "Repository paths bound to one Pattern Zone: one glob or a non-empty list of globs. The only place a Pattern Zone's paths live.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/glob",
+          "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    },
+    "caseSpec": {
+      "description": "File-name case vocabulary: one or more alternatives of kebab-case, snake_case, camelCase, PascalCase, or regex:PATTERN, combined with | (any-of); applies to the file stem, extension excluded.",
+      "pattern": "^\\s*(PascalCase|camelCase|kebab-case|snake_case|regex:[^|]*)(\\s*\\|\\s*(PascalCase|camelCase|kebab-case|snake_case|regex:[^|]*))*\\s*$",
+      "type": "string"
+    },
+    "consumesRule": {
+      "additionalProperties": false,
+      "description": "An imports Rule: states what a Zone may import: declared Zones by allow-list, external and standard-library imports by policy.",
+      "properties": {
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "imports": {
+          "additionalProperties": false,
+          "anyOf": [
+            {
+              "required": [
+                "internal"
+              ]
+            },
+            {
+              "properties": {
+                "external": {
+                  "const": "forbid",
+                  "description": "The external import class is forbidden.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "external"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "stdlib": {
+                  "const": "forbid",
+                  "description": "The standard-library import class is forbidden.",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "stdlib"
+              ],
+              "type": "object"
+            }
+          ],
+          "description": "What the Zone may import. At least one restriction must be declared: an internal allow-list, external: forbid, or stdlib: forbid.",
+          "properties": {
+            "external": {
+              "$ref": "#/$defs/importPolicy",
+              "description": "Policy for one import class."
+            },
+            "internal": {
+              "description": "Declared Zones this Zone may import; absent means unrestricted, empty means none. The owning Zone is always permitted implicitly.",
+              "items": {
+                "$ref": "#/$defs/zoneName",
+                "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "stdlib": {
+              "$ref": "#/$defs/importPolicy",
+              "description": "Policy for one import class."
+            }
+          },
+          "type": "object"
+        },
+        "on": {
+          "$ref": "#/$defs/judgedZones",
+          "description": "The declared Zone or Zones the Rule judges: one Zone name or a non-empty list."
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "required": [
+        "on",
+        "imports"
+      ],
+      "type": "object"
+    },
+    "contentRule": {
+      "additionalProperties": false,
+      "description": "A content Rule: forbids lines matching a regular expression in the selected files.",
+      "properties": {
+        "content": {
+          "additionalProperties": false,
+          "description": "Content no selected file may contain.",
+          "properties": {
+            "forbid": {
+              "description": "RE2 regular expression; every matching line is one Violation.",
+              "pattern": "\\S",
+              "type": "string"
+            }
+          },
+          "required": [
+            "forbid"
+          ],
+          "type": "object"
+        },
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "files": {
+          "$ref": "#/$defs/judgedFiles",
+          "description": "Globs narrowing the files the Rule judges: one glob or a non-empty list. Absent means every selected file."
+        },
+        "on": {
+          "$ref": "#/$defs/judgedZonesOrRepository",
+          "description": "The declared Zone or Zones the Rule judges: one Zone name or a non-empty list. Absent means the whole repository."
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "type": "object"
+    },
+    "excludedPaths": {
+      "description": "Files the Rule no longer judges: one glob or a non-empty list of globs.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/glob",
+          "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    },
+    "excludedZones": {
+      "description": "Zones the Rule no longer judges: one Zone name or a non-empty list.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/zoneName",
+          "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/zoneName",
+            "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    },
+    "exclusion": {
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "paths"
+          ]
+        },
+        {
+          "required": [
+            "zones"
+          ]
+        }
+      ],
+      "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable.",
+      "properties": {
+        "paths": {
+          "$ref": "#/$defs/excludedPaths",
+          "description": "Files the Rule no longer judges: one glob or a non-empty list of globs."
+        },
+        "reason": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "zones": {
+          "$ref": "#/$defs/excludedZones",
+          "description": "Zones the Rule no longer judges: one Zone name or a non-empty list."
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "type": "object"
+    },
+    "expandedGlob": {
+      "description": "Structure glob that may carry {name:\u003ccase\u003e} placeholders, each resolving once per recorded term; cases are PascalCase, camelCase, flatcase, kebab-case, snake_case.",
+      "pattern": "^([^/{}]|\\{name:(PascalCase|camelCase|flatcase|kebab-case|snake_case)\\})+(/([^/{}]|\\{name:(PascalCase|camelCase|flatcase|kebab-case|snake_case)\\})+)*$",
+      "type": "string"
+    },
+    "expansionSource": {
+      "description": "Recorded Ubiquitous Language collection an expanded structure Rule derives its globs from.",
+      "enum": [
+        "domain.aggregates",
+        "domain.entities",
+        "domain.value_objects",
+        "domain.events",
+        "domain.contexts",
+        "domain.invariants",
+        "domain.assertions",
+        "domain.specifications"
+      ],
+      "type": "string"
+    },
+    "extensionRule": {
+      "additionalProperties": false,
+      "description": "An uses Rule: delegates enforcement to a named Extension through the sandboxed SDK.",
+      "properties": {
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "files": {
+          "$ref": "#/$defs/judgedFiles",
+          "description": "Globs narrowing the files the Rule judges: one glob or a non-empty list. Absent means every selected file."
+        },
+        "on": {
+          "$ref": "#/$defs/judgedZonesOrRepository",
+          "description": "The declared Zone or Zones the Rule judges: one Zone name or a non-empty list. Absent means the whole repository."
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        },
+        "uses": {
+          "description": "The extension rule name registered under .arclint/extensions or distributed by an extended Pattern.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "with": {
+          "additionalProperties": true,
+          "description": "Parameters validated host-side against the extension's published schema before any extension code runs.",
+          "type": "object"
+        }
+      },
+      "required": [
+        "uses"
+      ],
+      "type": "object"
+    },
+    "glob": {
+      "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected.",
+      "pattern": "^[^/{}]+(/[^/{}]+)*$",
+      "type": "string"
+    },
+    "importPolicy": {
+      "default": "allow",
+      "description": "Policy for one import class.",
+      "enum": [
+        "allow",
+        "forbid"
+      ],
+      "type": "string"
+    },
+    "independenceRule": {
+      "additionalProperties": false,
+      "description": "An independent Rule: forbids imports between sibling Folders selected by globs.",
+      "properties": {
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "independent": {
+          "description": "Globs selecting sibling Folders that may not import each other; at least one, no duplicates.",
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "required": [
+        "independent"
+      ],
+      "type": "object"
+    },
+    "judgedFiles": {
+      "description": "Globs narrowing the files the Rule judges: one glob or a non-empty list. Absent means every selected file.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/glob",
+          "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    },
+    "judgedZones": {
+      "description": "The declared Zone or Zones the Rule judges: one Zone name or a non-empty list.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/zoneName",
+          "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/zoneName",
+            "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    },
+    "judgedZonesOrRepository": {
+      "description": "The declared Zone or Zones the Rule judges: one Zone name or a non-empty list. Absent means the whole repository.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/zoneName",
+          "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/zoneName",
+            "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    },
+    "layersRule": {
+      "additionalProperties": false,
+      "description": "A layers Rule: orders Zones highest first; a Zone may import same or lower layers, never higher.",
+      "properties": {
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "layers": {
+          "description": "Zones ordered highest first; at least two, no duplicates.",
+          "items": {
+            "$ref": "#/$defs/zoneName",
+            "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+          },
+          "minItems": 2,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "required": [
+        "layers"
+      ],
+      "type": "object"
+    },
+    "namingRule": {
+      "additionalProperties": false,
+      "description": "A naming Rule: constrains file names within a Zone to a finite case vocabulary.",
+      "properties": {
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "files": {
+          "$ref": "#/$defs/judgedFiles",
+          "description": "Globs narrowing the files the Rule judges: one glob or a non-empty list. Absent means every selected file."
+        },
+        "naming": {
+          "description": "The case vocabulary file stems must match: the case spec itself, or an object with case.",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/caseSpec",
+              "description": "File-name case vocabulary: one or more alternatives of kebab-case, snake_case, camelCase, PascalCase, or regex:PATTERN, combined with | (any-of); applies to the file stem, extension excluded."
+            },
+            {
+              "additionalProperties": false,
+              "description": "The case vocabulary under its own key.",
+              "properties": {
+                "case": {
+                  "$ref": "#/$defs/caseSpec",
+                  "description": "File-name case vocabulary: one or more alternatives of kebab-case, snake_case, camelCase, PascalCase, or regex:PATTERN, combined with | (any-of); applies to the file stem, extension excluded."
+                }
+              },
+              "required": [
+                "case"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "on": {
+          "$ref": "#/$defs/judgedZones",
+          "description": "The declared Zone or Zones the Rule judges: one Zone name or a non-empty list."
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "required": [
+        "on",
+        "naming"
+      ],
+      "type": "object"
+    },
+    "override": {
+      "additionalProperties": false,
+      "description": "An Override of a distributed or built-in Rule, keyed by that Rule's ID. It carries no constraint or rationale: it disables the Rule with a reason, changes its severity, excludes subjects, or suppresses findings. To change what a Pattern Rule asserts, disable it and add a local Rule under a new ID.",
+      "minProperties": 1,
+      "properties": {
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "type": "object"
+    },
+    "patternReference": {
+      "description": "Exact reference to one published Pattern version: namespace/name@version.",
+      "pattern": "^[a-z0-9_]([a-z0-9._-]*[a-z0-9_-])?/[a-z0-9_]([a-z0-9._-]*[a-z0-9_-])?@\\d+\\.\\d+\\.\\d+([\\-+][0-9A-Za-z.\\-+]+)?$",
+      "type": "string"
+    },
+    "patternZone": {
+      "description": "One Pattern Zone: its description, or an object with the description and the paths the Pattern suggests for the Binding. A Pattern never owns paths.",
+      "oneOf": [
+        {
+          "description": "What the Zone is for.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "description": "The Zone's description and the paths the Pattern suggests.",
+          "properties": {
+            "description": {
+              "description": "What the Zone is for.",
+              "pattern": "\\S",
+              "type": "string"
+            },
+            "paths": {
+              "$ref": "#/$defs/suggestedPaths",
+              "description": "Paths the Pattern suggests for the Binding: one glob or a non-empty list of globs. The init command writes them into bind when the Pattern is adopted."
+            }
+          },
+          "required": [
+            "description"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "protectedRule": {
+      "additionalProperties": false,
+      "description": "An imported_by Rule: restricts which Zones may import one Zone.",
+      "properties": {
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "imported_by": {
+          "description": "Zones permitted to import the Zone named under on; empty means none.",
+          "items": {
+            "$ref": "#/$defs/zoneName",
+            "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "on": {
+          "$ref": "#/$defs/protectedZone",
+          "description": "The one declared Zone the Rule protects."
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "required": [
+        "on",
+        "imported_by"
+      ],
+      "type": "object"
+    },
+    "protectedZone": {
+      "description": "The one declared Zone the Rule protects.",
+      "pattern": "^[a-z0-9_-]+$",
+      "type": "string"
+    },
+    "reason": {
+      "description": "The recorded reason for an adoption decision; required so the decision stays inspectable.",
+      "pattern": "\\S",
+      "type": "string"
+    },
+    "repositoryZone": {
+      "description": "One repository Zone: its paths as a glob or a list of globs, or an object with paths and an optional description.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/glob",
+          "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+        },
+        {
+          "description": "The Zone's globs.",
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        {
+          "additionalProperties": false,
+          "description": "The Zone's paths and an optional description.",
+          "properties": {
+            "description": {
+              "description": "Authoring description of the Zone.",
+              "type": "string"
+            },
+            "paths": {
+              "$ref": "#/$defs/zonePaths",
+              "description": "Membership selectors: one glob or a non-empty list of globs. A glob naming a directory claims its whole subtree."
+            }
+          },
+          "required": [
+            "paths"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "rule": {
+      "description": "One Rule carrying exactly one constraint key (imports, structure, naming, layers, imported_by, independent, acyclic, content, uses), or an Override carrying none.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/consumesRule",
+          "description": "An imports Rule: states what a Zone may import: declared Zones by allow-list, external and standard-library imports by policy."
+        },
+        {
+          "$ref": "#/$defs/structureRule",
+          "description": "A structure Rule: requires or forbids files matching globs inside a Zone."
+        },
+        {
+          "$ref": "#/$defs/namingRule",
+          "description": "A naming Rule: constrains file names within a Zone to a finite case vocabulary."
+        },
+        {
+          "$ref": "#/$defs/layersRule",
+          "description": "A layers Rule: orders Zones highest first; a Zone may import same or lower layers, never higher."
+        },
+        {
+          "$ref": "#/$defs/protectedRule",
+          "description": "An imported_by Rule: restricts which Zones may import one Zone."
+        },
+        {
+          "$ref": "#/$defs/independenceRule",
+          "description": "An independent Rule: forbids imports between sibling Folders selected by globs."
+        },
+        {
+          "$ref": "#/$defs/acyclicRule",
+          "description": "An acyclic Rule: forbids dependency cycles among declared Zones."
+        },
+        {
+          "$ref": "#/$defs/contentRule",
+          "description": "A content Rule: forbids lines matching a regular expression in the selected files."
+        },
+        {
+          "$ref": "#/$defs/extensionRule",
+          "description": "An uses Rule: delegates enforcement to a named Extension through the sandboxed SDK."
+        },
+        {
+          "$ref": "#/$defs/override",
+          "description": "An Override of a distributed or built-in Rule, keyed by that Rule's ID. It carries no constraint or rationale: it disables the Rule with a reason, changes its severity, excludes subjects, or suppresses findings. To change what a Pattern Rule asserts, disable it and add a local Rule under a new ID."
+        }
+      ]
+    },
+    "ruleID": {
+      "description": "Explicit stable Rule ID: LOCAL for a repository Rule, or NAMESPACE/NAME:LOCAL for a Rule an extended Pattern distributes. LOCAL uses a-z 0-9 . _ - /, never starting with . / - and never ending with . or /. Inside a Pattern file the Rule ID is local; the loader qualifies it with the Pattern's namespace/name, so two Patterns may distribute the same local identity.",
+      "pattern": "^([a-z0-9_]([a-z0-9._-]*[a-z0-9_-])?/[a-z0-9_]([a-z0-9._-]*[a-z0-9_-])?:)?[a-z0-9_]([a-z0-9._/-]*[a-z0-9_-])?$",
+      "type": "string"
+    },
+    "severity": {
+      "default": "error",
+      "description": "Gate importance of a Violation.",
+      "enum": [
+        "error",
+        "warning",
+        "info"
+      ],
+      "type": "string"
+    },
+    "structureRule": {
+      "additionalProperties": false,
+      "description": "A structure Rule: requires or forbids files matching globs inside a Zone.",
+      "properties": {
+        "disable": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        },
+        "exclude": {
+          "$ref": "#/$defs/exclusion",
+          "description": "Removes paths or Zones from what the Rule judges; excluded subjects evaluate not applicable."
+        },
+        "on": {
+          "$ref": "#/$defs/judgedZones",
+          "description": "The declared Zone or Zones the Rule judges: one Zone name or a non-empty list."
+        },
+        "rationale": {
+          "description": "The optional authored reason for this Rule. Nonblank when supplied and never derived from the Constraint; omit it when no reason is recorded.",
+          "pattern": "\\S",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Gate importance of a Violation."
+        },
+        "structure": {
+          "description": "Files the Zone must or must not contain. With each, the globs derive from a recorded vocabulary collection and may carry {name:\u003ccase\u003e} placeholders.",
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "anyOf": [
+                {
+                  "properties": {
+                    "require": {
+                      "description": "At least one required glob.",
+                      "minItems": 1,
+                      "type": "array",
+                      "uniqueItems": true
+                    }
+                  },
+                  "required": [
+                    "require"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "forbid": {
+                      "description": "At least one forbidden glob.",
+                      "minItems": 1,
+                      "type": "array",
+                      "uniqueItems": true
+                    }
+                  },
+                  "required": [
+                    "forbid"
+                  ],
+                  "type": "object"
+                }
+              ],
+              "description": "Plain structure: at least one non-empty glob list.",
+              "properties": {
+                "forbid": {
+                  "description": "No member file may match any glob.",
+                  "items": {
+                    "$ref": "#/$defs/glob",
+                    "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "require": {
+                  "description": "Each glob must match at least one member file.",
+                  "items": {
+                    "$ref": "#/$defs/glob",
+                    "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "type": "object"
+            },
+            {
+              "additionalProperties": false,
+              "anyOf": [
+                {
+                  "properties": {
+                    "require": {
+                      "description": "At least one required glob.",
+                      "minItems": 1,
+                      "type": "array",
+                      "uniqueItems": true
+                    }
+                  },
+                  "required": [
+                    "require"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "forbid": {
+                      "description": "At least one forbidden glob.",
+                      "minItems": 1,
+                      "type": "array",
+                      "uniqueItems": true
+                    }
+                  },
+                  "required": [
+                    "forbid"
+                  ],
+                  "type": "object"
+                }
+              ],
+              "description": "Expanded structure: one universally quantified proposition whose globs derive from a recorded Ubiquitous Language collection. A project recording nothing derives no obligations; the Rule exists and says so.",
+              "properties": {
+                "each": {
+                  "$ref": "#/$defs/expansionSource",
+                  "description": "Recorded Ubiquitous Language collection an expanded structure Rule derives its globs from."
+                },
+                "forbid": {
+                  "description": "No member file may match any glob.",
+                  "items": {
+                    "$ref": "#/$defs/expandedGlob",
+                    "description": "Structure glob that may carry {name:\u003ccase\u003e} placeholders, each resolving once per recorded term; cases are PascalCase, camelCase, flatcase, kebab-case, snake_case."
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "require": {
+                  "description": "Each glob must match at least one member file.",
+                  "items": {
+                    "$ref": "#/$defs/expandedGlob",
+                    "description": "Structure glob that may carry {name:\u003ccase\u003e} placeholders, each resolving once per recorded term; cases are PascalCase, camelCase, flatcase, kebab-case, snake_case."
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                }
+              },
+              "required": [
+                "each"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        "suppress": {
+          "$ref": "#/$defs/suppression",
+          "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported."
+        }
+      },
+      "required": [
+        "on",
+        "structure"
+      ],
+      "type": "object"
+    },
+    "suggestedPaths": {
+      "description": "Paths the Pattern suggests for the Binding: one glob or a non-empty list of globs. The init command writes them into bind when the Pattern is adopted.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/glob",
+          "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    },
+    "suppressedPaths": {
+      "description": "Files whose findings are suppressed: one glob or a non-empty list of globs.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/glob",
+          "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    },
+    "suppression": {
+      "additionalProperties": false,
+      "description": "Keeps findings at the paths while removing their gate effect; suppressed findings are still reported.",
+      "properties": {
+        "paths": {
+          "$ref": "#/$defs/suppressedPaths",
+          "description": "Files whose findings are suppressed: one glob or a non-empty list of globs."
+        },
+        "reason": {
+          "$ref": "#/$defs/reason",
+          "description": "The recorded reason for an adoption decision; required so the decision stays inspectable."
+        }
+      },
+      "required": [
+        "paths",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "zone": {
+      "description": "One Zone: a glob, a list of globs, or an object in a repository ruleset; a description or an object in a Pattern file.",
+      "oneOf": [
+        {
+          "description": "A Zone's one glob in a repository ruleset, or its description in a Pattern file.",
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "description": "A Zone's globs in a repository ruleset.",
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        {
+          "additionalProperties": false,
+          "description": "A Zone object: paths and description in a repository ruleset; description and suggested paths in a Pattern file.",
+          "properties": {
+            "description": {
+              "description": "Authoring description of the Zone.",
+              "type": "string"
+            },
+            "paths": {
+              "$ref": "#/$defs/zonePaths",
+              "description": "Membership selectors: one glob or a non-empty list of globs. A glob naming a directory claims its whole subtree."
+            }
+          },
+          "type": "object"
+        }
+      ]
+    },
+    "zoneName": {
+      "description": "Zone name: lowercase letters, digits, underscore, and hyphen.",
+      "pattern": "^[a-z0-9_-]+$",
+      "type": "string"
+    },
+    "zonePaths": {
+      "description": "Membership selectors: one glob or a non-empty list of globs. A glob naming a directory claims its whole subtree.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/glob",
+          "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      ]
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/wixregiga/arclint/main/docs/schemas/rules.arclint.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "The complete rules.arclint.yaml document ArcLint accepts. A repository ruleset carries runtime, scan, extends, zones, and rules; a Pattern distribution file carries the pattern header, zones, and rules. Every Rule is keyed by its Rule ID and carries exactly one constraint key; an entry with no constraint key is an Override of a Rule an extended Pattern distributes. Unknown keys are rejected everywhere.",
+  "else": {
+    "description": "A repository ruleset: every Zone carries paths, directly or through a Binding.",
+    "properties": {
+      "zones": {
+        "additionalProperties": {
+          "$ref": "#/$defs/repositoryZone",
+          "description": "One repository Zone: its paths as a glob or a list of globs, or an object with paths and an optional description."
+        },
+        "description": "Declared Zones keyed by name, each a glob, a list of globs, or an object with paths and description.",
+        "propertyNames": {
+          "$ref": "#/$defs/zoneName",
+          "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+        },
+        "type": "object"
+      }
+    }
+  },
+  "if": {
+    "required": [
+      "pattern"
+    ]
+  },
+  "properties": {
+    "extends": {
+      "description": "Patterns this repository adopts. Each entry pins one exact version and binds every Zone the Pattern lists to repository paths. Repository rulesets only.",
+      "items": {
+        "additionalProperties": false,
+        "description": "One adopted Pattern and its Bindings.",
+        "properties": {
+          "bind": {
+            "additionalProperties": {
+              "$ref": "#/$defs/boundPaths",
+              "description": "Repository paths bound to one Pattern Zone: one glob or a non-empty list of globs. The only place a Pattern Zone's paths live."
+            },
+            "description": "Paths for every Zone the Pattern lists, keyed by Zone name: one glob or a list of globs.",
+            "propertyNames": {
+              "$ref": "#/$defs/zoneName",
+              "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+            },
+            "type": "object"
+          },
+          "pattern": {
+            "$ref": "#/$defs/patternReference",
+            "description": "Exact reference to one published Pattern version: namespace/name@version."
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "type": "object"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "pattern": {
+      "additionalProperties": false,
+      "description": "Pattern identity header, present only in a Pattern distribution file, never in a repository ruleset.",
+      "properties": {
+        "coverage": {
+          "description": "Runtime targets the Pattern's Rules were written for, spelled exactly like the repository runtime list.",
+          "items": {
+            "enum": [
+              "go",
+              "ts",
+              "py"
+            ],
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "documentation": {
+          "description": "Where readers learn what the Pattern enforces and why: a URL or a short text.",
+          "type": "string"
+        },
+        "name": {
+          "description": "Pattern name within its namespace.",
+          "pattern": "^[a-z0-9_]([a-z0-9._-]*[a-z0-9_-])?$",
+          "type": "string"
+        },
+        "namespace": {
+          "description": "Pattern namespace; with the name it qualifies every distributed Rule ID as namespace/name:local.",
+          "pattern": "^[a-z0-9_]([a-z0-9._-]*[a-z0-9_-])?$",
+          "type": "string"
+        },
+        "version": {
+          "description": "Exact published version; never part of Rule identity.",
+          "pattern": "^\\d+\\.\\d+\\.\\d+([\\-+][0-9A-Za-z.\\-+]+)?$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "namespace",
+        "name",
+        "version"
+      ],
+      "type": "object"
+    },
+    "rules": {
+      "additionalProperties": {
+        "$ref": "#/$defs/rule",
+        "description": "One Rule carrying exactly one constraint key (imports, structure, naming, layers, imported_by, independent, acyclic, content, uses), or an Override carrying none."
+      },
+      "description": "Every Rule keyed by its Rule ID. An entry with one constraint key is a Rule; an entry with none is an Override of a Rule an extended Pattern distributes, keyed by that Rule's qualified ID, or of a built-in domain Rule, keyed by its block invariant.",
+      "propertyNames": {
+        "$ref": "#/$defs/ruleID",
+        "description": "Explicit stable Rule ID: LOCAL for a repository Rule, or NAMESPACE/NAME:LOCAL for a Rule an extended Pattern distributes. LOCAL uses a-z 0-9 . _ - /, never starting with . / - and never ending with . or /. Inside a Pattern file the Rule ID is local; the loader qualifies it with the Pattern's namespace/name, so two Patterns may distribute the same local identity."
+      },
+      "type": "object"
+    },
+    "runtime": {
+      "description": "Language targets whose code facts observation produces. Repository rulesets only.",
+      "items": {
+        "enum": [
+          "go",
+          "ts",
+          "py"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "scan": {
+      "additionalProperties": false,
+      "description": "Repository observation policy: what the walk excludes and how unknown imports are treated.",
+      "properties": {
+        "exclude": {
+          "description": "Globs the repository walk skips entirely.",
+          "items": {
+            "$ref": "#/$defs/glob",
+            "description": "Repo-relative path pattern: * and ? never cross /, a ** segment matches any number of segments, [...] matches one character. Brace alternation is rejected."
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "include_testdata": {
+          "default": false,
+          "description": "Whether testdata directories are observed.",
+          "type": "boolean"
+        },
+        "unknown_imports": {
+          "default": "warn",
+          "description": "Policy for imports that classify neither stdlib, internal, nor external.",
+          "enum": [
+            "error",
+            "warn",
+            "ignore"
+          ],
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "zones": {
+      "additionalProperties": {
+        "$ref": "#/$defs/zone",
+        "description": "One Zone: a glob, a list of globs, or an object in a repository ruleset; a description or an object in a Pattern file."
+      },
+      "description": "Declared Zones keyed by name. In a repository ruleset a Zone is a glob, a list of globs, or an object with paths and description. In a Pattern file a Zone is its description, or an object with description and the paths it suggests for the Binding.",
+      "propertyNames": {
+        "$ref": "#/$defs/zoneName",
+        "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+      },
+      "type": "object"
+    }
+  },
+  "then": {
+    "description": "A Pattern distribution file: no runtime, no scan, no extends, because those are repository policy; Zones carry descriptions and suggested paths only.",
+    "properties": {
+      "extends": false,
+      "rules": {
+        "additionalProperties": {
+          "description": "One distributed Rule carrying exactly one constraint key (imports, structure, naming, layers, imported_by, independent, acyclic, content, uses).",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/consumesRule",
+              "description": "An imports Rule: states what a Zone may import: declared Zones by allow-list, external and standard-library imports by policy."
+            },
+            {
+              "$ref": "#/$defs/structureRule",
+              "description": "A structure Rule: requires or forbids files matching globs inside a Zone."
+            },
+            {
+              "$ref": "#/$defs/namingRule",
+              "description": "A naming Rule: constrains file names within a Zone to a finite case vocabulary."
+            },
+            {
+              "$ref": "#/$defs/layersRule",
+              "description": "A layers Rule: orders Zones highest first; a Zone may import same or lower layers, never higher."
+            },
+            {
+              "$ref": "#/$defs/protectedRule",
+              "description": "An imported_by Rule: restricts which Zones may import one Zone."
+            },
+            {
+              "$ref": "#/$defs/independenceRule",
+              "description": "An independent Rule: forbids imports between sibling Folders selected by globs."
+            },
+            {
+              "$ref": "#/$defs/acyclicRule",
+              "description": "An acyclic Rule: forbids dependency cycles among declared Zones."
+            },
+            {
+              "$ref": "#/$defs/contentRule",
+              "description": "A content Rule: forbids lines matching a regular expression in the selected files."
+            },
+            {
+              "$ref": "#/$defs/extensionRule",
+              "description": "An uses Rule: delegates enforcement to a named Extension through the sandboxed SDK."
+            }
+          ]
+        },
+        "description": "A Pattern distributes Rules and cannot override: every entry carries exactly one constraint key.",
+        "propertyNames": {
+          "$ref": "#/$defs/ruleID",
+          "description": "Explicit stable Rule ID: LOCAL for a repository Rule, or NAMESPACE/NAME:LOCAL for a Rule an extended Pattern distributes. LOCAL uses a-z 0-9 . _ - /, never starting with . / - and never ending with . or /. Inside a Pattern file the Rule ID is local; the loader qualifies it with the Pattern's namespace/name, so two Patterns may distribute the same local identity."
+        },
+        "type": "object"
+      },
+      "runtime": false,
+      "scan": false,
+      "zones": {
+        "additionalProperties": {
+          "$ref": "#/$defs/patternZone",
+          "description": "One Pattern Zone: its description, or an object with the description and the paths the Pattern suggests for the Binding. A Pattern never owns paths."
+        },
+        "description": "Declared Zones keyed by name, each a description or an object with description and suggested paths.",
+        "propertyNames": {
+          "$ref": "#/$defs/zoneName",
+          "description": "Zone name: lowercase letters, digits, underscore, and hyphen."
+        },
+        "type": "object"
+      }
+    }
+  },
+  "title": "ArcLint ruleset",
+  "type": "object"
+}
