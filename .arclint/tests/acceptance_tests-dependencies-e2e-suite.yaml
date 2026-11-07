@@ -1,0 +1,25 @@
+rule: acceptance_tests-dependencies
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0"}}'
+  src/contexts/authoring/domain/document.ts: 'export const value = 1;
+
+    '
+  tests/support/page.ts: 'import { value as v0 } from ''../../src/contexts/authoring/domain/document'';
+
+    export const value = v0;
+
+    '
+  tests/e2e/editor.test.ts: 'import { value as v0 } from ''../../src/contexts/authoring/domain/document'';
+
+    import { value as v1 } from ''../support/page'';
+
+    export const value = v0 + v1;
+
+    '
+expect:
+- path: tests/e2e/editor.test.ts
+  line: 1
+  message: import "../../src/contexts/authoring/domain/document" resolves to Zone(s) ["domain"], not in the allow-list of Zone "acceptance_tests"
+- path: tests/support/page.ts
+  line: 1
+  message: import "../../src/contexts/authoring/domain/document" resolves to Zone(s) ["domain"], not in the allow-list of Zone "acceptance_tests"

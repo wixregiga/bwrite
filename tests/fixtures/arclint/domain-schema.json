@@ -1,0 +1,210 @@
+{
+  "$id": "https://raw.githubusercontent.com/wixregiga/arclint/main/docs/schemas/domain.arclint.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "domain-librarian ubiquitous-language library",
+  "description": "The project's recorded Ubiquitous Language, organized by bounded context. The domain-librarian has sole write custody; humans review and edit under the same rules. Every term carries a definition, and a term lives in exactly one context. Every entity lives under its aggregate, and every invariant lives under the term that enforces it. Aliases point at the canonical term. Unresolved classifications are written as questions, never guessed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "project", "contexts"],
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Document version. This library accepts version 1 only."
+    },
+    "project": { "type": "string", "minLength": 1, "description": "The name of the software whose domain the file records." },
+    "description": { "type": "string", "minLength": 1, "description": "The domain in a few sentences, as the people in it would tell a newcomer." },
+    "contexts": {
+      "type": "object",
+      "description": "The bounded contexts in play, a map keyed by context name; one model each.",
+      "propertyNames": { "pattern": "^[a-z][a-z0-9_-]*$" },
+      "additionalProperties": { "$ref": "#/$defs/context", "description": "A description of a boundary, typically a subsystem or the work of a particular team, within which a particular model is defined and applicable. The boundary is set explicitly in terms of team organization, usage within specific parts of the application, and physical manifestations such as code bases and database schemas." }
+    },
+    "relations": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "The context map: the relations between the recorded contexts, each upstream first.",
+      "items": { "$ref": "#/$defs/relation", "description": "One point of contact on the context map, a relationship between an upstream context, whose actions affect the downstream context's success, and a downstream context, whose actions do not significantly affect the upstream. Its kind is one of the published relationship patterns." }
+    }
+  },
+  "$defs": {
+    "context": {
+      "type": "object",
+      "description": "A description of a boundary, typically a subsystem or the work of a particular team, within which a particular model is defined and applicable. The boundary is set explicitly in terms of team organization, usage within specific parts of the application, and physical manifestations such as code bases and database schemas.",
+      "additionalProperties": false,
+      "required": ["definition"],
+      "properties": {
+        "definition": { "type": "string", "minLength": 1, "description": "What the context is responsible for and which model it holds." },
+        "aggregates": {
+          "type": "object",
+          "description": "The context's aggregates, each with its identity, member entities, invariants, assertions, repository, and factory.",
+          "propertyNames": { "pattern": "^\\S(.*\\S)?$" },
+          "additionalProperties": { "$ref": "#/$defs/aggregate", "description": "A cluster of entities and value objects with a boundary around it, treated as a single unit for the purpose of data changes. The one boundary is three things at once. It is a consistency boundary: properties and invariants are defined for the aggregate as a whole, the root enforces them, and inside the boundary consistency rules apply synchronously while across it updates are handled asynchronously. It is a transactional boundary: the aggregate is loaded, saved, and removed whole, one transaction changes one aggregate, and transactions do not cross the boundary. It is a reference boundary: one entity is the root, external objects hold references to the root only, a member's identity is local to the aggregate, and what one aggregate keeps of another is that aggregate's identity." }
+        },
+        "value_objects": {
+          "type": "object",
+          "description": "Value objects of the context, each with its invariants.",
+          "propertyNames": { "pattern": "^\\S(.*\\S)?$" },
+          "additionalProperties": { "$ref": "#/$defs/value_object", "description": "An object that describes or computes some characteristic of a thing and has no conceptual identity: it matters only as the combination of its attributes, two with the same attribute values are equal, and it is treated as immutable, with every operation a side-effect-free function." }
+        },
+        "events": {
+          "type": "object",
+          "description": "The context's domain events.",
+          "propertyNames": { "pattern": "^\\S(.*\\S)?$" },
+          "additionalProperties": { "$ref": "#/$defs/event", "description": "A full-fledged part of the domain model representing something that happened in the domain that domain experts care about, as distinct from a system event. It is ordinarily immutable, being a record of the past, and typically carries the time it occurred and the identities of the entities involved." }
+        },
+        "services": {
+          "type": "object",
+          "description": "The context's domain services.",
+          "propertyNames": { "pattern": "^\\S(.*\\S)?$" },
+          "additionalProperties": { "$ref": "#/$defs/service", "description": "A standalone operation in the domain for a significant process or transformation that is not a natural responsibility of an entity or value object, given a name that is part of the ubiquitous language and a contract stated as assertions. It makes a business decision that no one aggregate or value can make alone; it may read through repositories, but it never commits and never publishes." }
+        },
+        "specifications": {
+          "type": "object",
+          "description": "The context's specifications.",
+          "propertyNames": { "pattern": "^\\S(.*\\S)?$" },
+          "additionalProperties": { "$ref": "#/$defs/specification", "description": "A predicate-like value object that tells whether a candidate object matches some criteria, separating the statement of what kind of objects can be selected from the object that does the selecting. It answers through one operation, isSatisfiedBy, and can be combined with other specifications." }
+        },
+        "questions": {
+          "type": "object",
+          "description": "Open questions about the model, keyed, recorded in place of a guess; a question is never a rule and nothing is enforced from it.",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+          "additionalProperties": { "type": "string", "minLength": 1, "description": "The question, as the team would ask a domain expert." }
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "description": "A cluster of entities and value objects with a boundary around it, treated as a single unit for the purpose of data changes. The one boundary is three things at once. It is a consistency boundary: properties and invariants are defined for the aggregate as a whole, the root enforces them, and inside the boundary consistency rules apply synchronously while across it updates are handled asynchronously. It is a transactional boundary: the aggregate is loaded, saved, and removed whole, one transaction changes one aggregate, and transactions do not cross the boundary. It is a reference boundary: one entity is the root, external objects hold references to the root only, a member's identity is local to the aggregate, and what one aggregate keeps of another is that aggregate's identity.",
+      "additionalProperties": false,
+      "required": ["definition", "identity"],
+      "properties": {
+        "definition": { "type": "string", "minLength": 1, "description": "What the aggregate is and what changes together inside it." },
+        "identity": { "type": "string", "minLength": 1, "description": "The value object that is the root's global identity, a term of the context." },
+        "aliases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Other names the team uses for the same term."
+        },
+        "entities": {
+          "type": "object",
+          "description": "The aggregate's member entities other than the root, a map keyed by name; each has a local identity.",
+          "propertyNames": { "pattern": "^\\S(.*\\S)?$" },
+          "additionalProperties": { "$ref": "#/$defs/entity", "description": "An object defined primarily by its identity rather than its attributes: a thread of identity that runs through time and often across distinct representations, whose attributes may change while it stays the same thing. The model defines what it means to be the same thing." }
+        },
+        "invariants": {
+          "type": "object",
+          "description": "The aggregate's invariants, a map from key to statement; each key names the rule, and ensure followed by the key names the root method that enforces it.",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+          "additionalProperties": { "type": "string", "minLength": 1, "description": "The rule in the ubiquitous language, as a domain expert would state it." }
+        },
+        "assertions": {
+          "type": "object",
+          "description": "Post-conditions of the root's operations, a map keyed by the assertion's name.",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+          "additionalProperties": { "$ref": "#/$defs/assertion", "description": "A stated post-condition of an operation or invariant of a class or aggregate, made explicit so that the effect of an operation can be known without tracing its implementation. Assertions define the contracts of services and entity modifiers and the invariants on aggregates; where they cannot be coded directly, they are written as automated unit tests." }
+        },
+        "repository": { "type": "string", "minLength": 1, "description": "The name of the aggregate's repository type when the aggregate needs global access." },
+        "factory": { "type": "string", "minLength": 1, "description": "The name of the factory that assembles the aggregate when construction is complex." }
+      }
+    },
+    "entity": {
+      "type": "object",
+      "description": "An object defined primarily by its identity rather than its attributes: a thread of identity that runs through time and often across distinct representations, whose attributes may change while it stays the same thing. The model defines what it means to be the same thing.",
+      "additionalProperties": false,
+      "required": ["definition"],
+      "properties": {
+        "definition": { "type": "string", "minLength": 1, "description": "What the entity is and what identity means for it." },
+        "identity": { "type": "string", "minLength": 1, "description": "The value object that is the member's local identity, when the member has one worth naming." },
+        "aliases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Other names the team uses for the same term."
+        }
+      }
+    },
+    "value_object": {
+      "type": "object",
+      "description": "An object that describes or computes some characteristic of a thing and has no conceptual identity: it matters only as the combination of its attributes, two with the same attribute values are equal, and it is treated as immutable, with every operation a side-effect-free function.",
+      "additionalProperties": false,
+      "required": ["definition"],
+      "properties": {
+        "definition": { "type": "string", "minLength": 1, "description": "What the value describes and what makes two of them equal." },
+        "aliases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Other names the team uses for the same term."
+        },
+        "invariants": {
+          "type": "object",
+          "description": "The conditions a value of this kind always satisfies, a map from key to statement; a value that would violate one is never constructed.",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+          "additionalProperties": { "type": "string", "minLength": 1, "description": "The rule in the ubiquitous language, as a domain expert would state it." }
+        }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "description": "A stated post-condition of an operation or invariant of a class or aggregate, made explicit so that the effect of an operation can be known without tracing its implementation. Assertions define the contracts of services and entity modifiers and the invariants on aggregates; where they cannot be coded directly, they are written as automated unit tests.",
+      "additionalProperties": false,
+      "required": ["on", "statement"],
+      "properties": {
+        "on": { "type": "string", "minLength": 1, "description": "The operation the guarantee belongs to: a command of the root, or an operation of the service." },
+        "statement": { "type": "string", "minLength": 1, "description": "The guarantee as the domain expert states it, in the ubiquitous language (Only an active tenant offers an invitation); it is recorded in the expert's words and never rewritten into a post-condition, because on already names the operation." }
+      }
+    },
+    "event": {
+      "type": "object",
+      "description": "A full-fledged part of the domain model representing something that happened in the domain that domain experts care about, as distinct from a system event. It is ordinarily immutable, being a record of the past, and typically carries the time it occurred and the identities of the entities involved.",
+      "additionalProperties": false,
+      "required": ["definition"],
+      "properties": {
+        "definition": { "type": "string", "minLength": 1, "description": "What happened and who cares." },
+        "raised_by": { "type": "string", "minLength": 1, "description": "The aggregate whose operation raises it." }
+      }
+    },
+    "service": {
+      "type": "object",
+      "description": "A standalone operation in the domain for a significant process or transformation that is not a natural responsibility of an entity or value object, given a name that is part of the ubiquitous language and a contract stated as assertions. It makes a business decision that no one aggregate or value can make alone; it may read through repositories, but it never commits and never publishes.",
+      "additionalProperties": false,
+      "required": ["definition"],
+      "properties": {
+        "definition": { "type": "string", "minLength": 1, "description": "The business decision it makes and across which aggregates." },
+        "assertions": {
+          "type": "object",
+          "description": "The service's contract: a map keyed by the assertion's name, each with on (the operation of the service) and statement, checked by the service's method assert followed by the key in the language's method case.",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$" },
+          "additionalProperties": { "$ref": "#/$defs/assertion", "description": "A stated post-condition of an operation or invariant of a class or aggregate, made explicit so that the effect of an operation can be known without tracing its implementation. Assertions define the contracts of services and entity modifiers and the invariants on aggregates; where they cannot be coded directly, they are written as automated unit tests." }
+        }
+      }
+    },
+    "specification": {
+      "type": "object",
+      "description": "A predicate-like value object that tells whether a candidate object matches some criteria, separating the statement of what kind of objects can be selected from the object that does the selecting. It answers through one operation, isSatisfiedBy, and can be combined with other specifications.",
+      "additionalProperties": false,
+      "required": ["definition"],
+      "properties": {
+        "definition": { "type": "string", "minLength": 1, "description": "The criteria it states, in the ubiquitous language." }
+      }
+    },
+    "relation": {
+      "type": "object",
+      "description": "One point of contact on the context map, a relationship between an upstream context, whose actions affect the downstream context's success, and a downstream context, whose actions do not significantly affect the upstream. Its kind is one of the published relationship patterns.",
+      "additionalProperties": false,
+      "required": ["from", "to", "kind"],
+      "properties": {
+        "from": { "type": "string", "minLength": 1, "description": "The upstream context." },
+        "to": { "type": "string", "minLength": 1, "description": "The downstream context." },
+        "kind": {
+          "type": "string",
+          "enum": ["partnership", "shared_kernel", "customer_supplier", "conformist", "anticorruption_layer", "open_host_service", "published_language", "separate_ways"],
+          "description": "Relationship kind, one of:\npartnership: The two contexts succeed or fail together; the teams coordinate planning and the evolution of their interfaces. Influence runs both ways.\nshared_kernel: An explicitly bounded subset of the model, and the code and database design associated with it, that the two teams agree to share and change only in consultation. Influence runs both ways.\ncustomer_supplier: The downstream team is the upstream team's customer; downstream priorities factor into upstream planning and jointly developed acceptance tests validate the interface.\nconformist: The downstream team eliminates translation by adhering to the upstream model as it is, sharing the upstream's ubiquitous language.\nanticorruption_layer: The downstream context isolates itself with a layer that presents the upstream's functionality in terms of the downstream's own model, translating in one or both directions.\nopen_host_service: The upstream context defines an open protocol giving access to its subsystem as a set of services, augmented by one-off translators only for idiosyncratic clients.\npublished_language: The two contexts translate through a well-documented shared language that can express the necessary domain information, often combined with an open-host service.\nseparate_ways: The two contexts have no connection at all, so each may find simple, specialized solutions within its own scope."
+        },
+        "description": { "type": "string", "minLength": 1, "description": "What passes between the two contexts and which way, in the ubiquitous language." }
+      }
+    }
+  }
+}

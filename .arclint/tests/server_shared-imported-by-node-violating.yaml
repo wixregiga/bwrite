@@ -1,0 +1,15 @@
+rule: server_shared-imported-by-node
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0"}}'
+  src/contexts/authoring/browser/http-document-repository.ts: 'import { value as v0 } from ''../../../../server/shared/atomic-write'';
+
+    export const value = v0;
+
+    '
+  server/shared/atomic-write.ts: 'export const value = 1;
+
+    '
+expect:
+- path: src/contexts/authoring/browser/http-document-repository.ts
+  line: 1
+  message: Zone "server_shared" is protected (importable only by ["node", "server_app"]); import of "../../../../server/shared/atomic-write" from Zone(s) ["browser"]

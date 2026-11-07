@@ -1,0 +1,269 @@
+/*
+ * Term kinds: the one global place where the colors of Domain Term kinds live.
+ *
+ * Each kind has a color (the badge fill and the term text) and a tint (the highlight
+ * background). Change a kind everywhere by changing its two custom properties here.
+ *
+ * Every color satisfies, and tests/unit/kindMarks.test.ts measures from this file:
+ *   - WCAG 2.2 AA contrast of at least 4.5:1 as text on the page and editor backgrounds
+ *     and as the fill under white letters,
+ *   - CIEDE2000 distance of at least 20 from every other kind color,
+ *   - the same 4.5:1 as text on its own tint.
+ * The letter mark inside the badge is the cue that does not depend on color.
+ */
+
+:root {
+  --kind-bounded_context: #493a89;
+  --kind-bounded_context-tint: #edebf3;
+
+  --kind-aggregate: #166eb0;
+  --kind-aggregate-tint: #e8f1f7;
+
+  --kind-entity: #067031;
+  --kind-entity-tint: #e6f1ea;
+
+  --kind-value_object: #843f01;
+  --kind-value_object-tint: #f3ece6;
+
+  --kind-domain_event: #cf1033;
+  --kind-domain_event-tint: #fae7eb;
+
+  --kind-domain_service: #c01790;
+  --kind-domain_service-tint: #f9e8f4;
+
+  --kind-specification: #776b1b;
+  --kind-specification-tint: #f1f0e8;
+
+  --kind-unclassified: #4b4e4c;
+  --kind-unclassified-tint: #ededed;
+
+  --kind-badge-size: 20px;
+  --kind-badge-gap: 0px;
+  --kind-ring-width: 2px;
+  --kind-underline-width: 2px;
+}
+
+/* Badge: a filled circle with the kind's mark centered in white. */
+
+.bw-kind-badge {
+  --kind-color: var(--kind-unclassified);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: none;
+  width: var(--kind-badge-size);
+  height: var(--kind-badge-size);
+  margin-inline-end: var(--kind-badge-gap);
+  border-radius: 50%;
+  background-color: var(--kind-color);
+  color: #ffffff;
+  font-family: var(--font-ui, system-ui, sans-serif);
+  font-size: calc(var(--kind-badge-size) * 0.55);
+  font-weight: 700;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Proposed: any kind, with a dashed ring around the badge so the cue is not color alone. */
+
+.bw-kind-badge--proposed {
+  margin: calc(var(--kind-ring-width) + 1px);
+  margin-inline-end: calc(var(--kind-ring-width) + 1px + var(--kind-badge-gap));
+  outline: var(--kind-ring-width) dashed var(--kind-color);
+  outline-offset: 1px;
+}
+
+.bw-kind-badge--bounded_context {
+  --kind-color: var(--kind-bounded_context);
+}
+
+.bw-kind-badge--aggregate {
+  --kind-color: var(--kind-aggregate);
+}
+
+.bw-kind-badge--entity {
+  --kind-color: var(--kind-entity);
+}
+
+.bw-kind-badge--value_object {
+  --kind-color: var(--kind-value_object);
+}
+
+.bw-kind-badge--domain_event {
+  --kind-color: var(--kind-domain_event);
+}
+
+.bw-kind-badge--domain_service {
+  --kind-color: var(--kind-domain_service);
+}
+
+.bw-kind-badge--specification {
+  --kind-color: var(--kind-specification);
+}
+
+.bw-kind-badge--unclassified {
+  --kind-color: var(--kind-unclassified);
+}
+
+/* Term text: the term itself in its kind's color. */
+
+.bw-kind-text--bounded_context {
+  color: var(--kind-bounded_context);
+}
+
+.bw-kind-text--aggregate {
+  color: var(--kind-aggregate);
+}
+
+.bw-kind-text--entity {
+  color: var(--kind-entity);
+}
+
+.bw-kind-text--value_object {
+  color: var(--kind-value_object);
+}
+
+.bw-kind-text--domain_event {
+  color: var(--kind-domain_event);
+}
+
+.bw-kind-text--domain_service {
+  color: var(--kind-domain_service);
+}
+
+.bw-kind-text--specification {
+  color: var(--kind-specification);
+}
+
+.bw-kind-text--unclassified {
+  color: var(--kind-unclassified);
+}
+
+/* Highlight: the kind's tint behind the term with a kind-colored underline. */
+
+.bw-kind-highlight {
+  border-radius: 3px;
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-thickness: var(--kind-underline-width);
+  text-underline-offset: 3px;
+}
+
+.bw-kind-highlight--bounded_context {
+  background-color: var(--kind-bounded_context-tint);
+  text-decoration-color: var(--kind-bounded_context);
+}
+
+.bw-kind-highlight--aggregate {
+  background-color: var(--kind-aggregate-tint);
+  text-decoration-color: var(--kind-aggregate);
+}
+
+.bw-kind-highlight--entity {
+  background-color: var(--kind-entity-tint);
+  text-decoration-color: var(--kind-entity);
+}
+
+.bw-kind-highlight--value_object {
+  background-color: var(--kind-value_object-tint);
+  text-decoration-color: var(--kind-value_object);
+}
+
+.bw-kind-highlight--domain_event {
+  background-color: var(--kind-domain_event-tint);
+  text-decoration-color: var(--kind-domain_event);
+}
+
+.bw-kind-highlight--domain_service {
+  background-color: var(--kind-domain_service-tint);
+  text-decoration-color: var(--kind-domain_service);
+}
+
+.bw-kind-highlight--specification {
+  background-color: var(--kind-specification-tint);
+  text-decoration-color: var(--kind-specification);
+}
+
+.bw-kind-highlight--unclassified {
+  background-color: var(--kind-unclassified-tint);
+  text-decoration-color: var(--kind-unclassified);
+}
+
+/*
+ * Editor: the badge is drawn immediately left of the term, outside its highlight. A value or a
+ * rule reading adds a short word after the badge in the same kind color, so the reading is
+ * not told by color alone.
+ */
+
+.bw-term-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-end: 5px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.bw-term-mark .bw-kind-badge--proposed {
+  margin-block: 0;
+}
+
+.bw-term-mark__word {
+  font-family: var(--font-ui, system-ui, sans-serif);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.bw-term,
+.bw-ref {
+  cursor: help;
+}
+
+/* A reference to a proposed term underlines with a dashed line instead of a solid one. */
+.bw-ref--proposed {
+  text-decoration-style: dashed;
+}
+
+/* More contrast requested: a thicker ring and underline, and a heavier mark. */
+
+@media (prefers-contrast: more) {
+  :root {
+    --kind-ring-width: 3px;
+    --kind-underline-width: 3px;
+  }
+
+  .bw-kind-badge {
+    font-weight: 800;
+  }
+}
+
+/*
+ * Forced colors replace authored colors. The badge keeps its mark and gets a system-color
+ * border; the proposed ring and the highlight underline use system colors too.
+ */
+@media (forced-colors: active) {
+  .bw-kind-badge {
+    border: 2px solid CanvasText;
+    background-color: Canvas;
+    color: CanvasText;
+    forced-color-adjust: none;
+  }
+
+  .bw-kind-badge--proposed {
+    outline-color: CanvasText;
+  }
+
+  .bw-kind-highlight {
+    background-color: transparent;
+    text-decoration-color: LinkText;
+  }
+}

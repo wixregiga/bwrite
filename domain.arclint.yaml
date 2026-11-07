@@ -1,0 +1,193 @@
+# yaml-language-server: $schema=.arclint/schemas/domain.arclint.schema.json
+version: 1
+project: bwrite
+description: >-
+  BWrite is where a product team writes down what its software should do, in
+  the words the team has agreed on. Each Project is one product. Its Features
+  are written freely as notes, Given/When/Then statements, Scenarios, and
+  Rules, and its UbiquitousLanguage holds the DomainTerms the team has agreed
+  on or proposed. While writing, an author sees which agreed terms the text
+  uses, looks up what they mean, proposes new ones, and models each term with
+  the Domain-Driven Design building blocks arclint defines.
+contexts:
+  authoring:
+    definition: >-
+      Writing a Project's Features in the Project's own UbiquitousLanguage, and
+      modeling that language. A Feature's text is free: every line is a note, a
+      Given/When/Then statement, a section such as Scenario or Rule, a comment,
+      a tag line, a table row, or part of a doc string, and no line is invalid,
+      so unfinished writing is welcome. A statement needs no Scenario around it.
+      A Scenario is a concrete example of expected behavior. A Rule states one
+      business rule under the Gherkin Rule keyword and may group the Scenarios
+      that illustrate it; an author can model it as a PlacedRule held by the
+      DomainTerm that enforces or guarantees it. BWrite recognizes an accepted
+      DomainTerm's name in the text case-insensitively, as whole words,
+      including names of several words, preferring the longest name where two
+      overlap. It lets the author inspect a term without leaving the text,
+      propose selected text as a new DomainTerm, and tie one occurrence to the
+      DomainTerm it means with a TermReference. The building blocks a DomainTerm can be are
+      the ones arclint domain explain defines.
+    aggregates:
+      Feature:
+        definition: >-
+          One capability of a Project, written as free text with a title, together
+          with the TermReferences that tie occurrences in that text to
+          DomainTerms. The text and its TermReferences change together, so a
+          TermReference always describes the text as it is now. A Feature belongs
+          to one Project, which it knows by its ProjectId.
+        identity: FeatureId
+        invariants:
+          references-never-overlap: >-
+            A Feature never ties the same piece of its text to two DomainTerms,
+            so no two of its TermReferences overlap.
+      Project:
+        definition: >-
+          One software product the team is describing: its name, description,
+          goals, and the ProjectPath where its code and recorded domain live on
+          disk. Its Features and its UbiquitousLanguage refer to it by its
+          ProjectId.
+        identity: ProjectId
+        invariants:
+          has-a-name: A Project always has a name.
+          has-a-path: A Project always has a ProjectPath.
+      UbiquitousLanguage:
+        definition: >-
+          The words one Project's team has agreed on or proposed, as DomainTerms.
+          It is kept in the Project's VocabularyFile on disk and nowhere else:
+          BWrite loads it from that file and saves every change back to it,
+          whichever format the file is in. Every Project has exactly one, identified by the Project's ProjectId.
+          Adding, classifying, and placing rules on its DomainTerms happen inside
+          it, because a term's name must be checked against every other term, and
+          a term is placed only under terms of the same language.
+        identity: ProjectId
+        aliases: [Ubiquitous Language, Vocabulary]
+        repository: UbiquitousLanguageRepository
+        entities:
+          DomainTerm:
+            definition: >-
+              A named concept in a Project's UbiquitousLanguage. An accepted
+              DomainTerm is recorded in the Project's domain file with an agreed
+              definition and any aliases, and is recognized in Features by its
+              name or an alias.
+              A proposed DomainTerm carries a suggested definition and its
+              TermProposal, is visible in the language, and is never recognized
+              as accepted. The team may classify it with a Classification and
+              place Rules on it as PlacedRules. Its TermId stays the same while
+              its definition, kind, aliases, and PlacedRules change. Renaming it
+              or moving it to another bounded context makes it a new TermId, and
+              BWrite moves every TermReference that tied text to the old one.
+            identity: TermId
+            aliases: [Domain Term, Term]
+        invariants:
+          assertions-only-on-aggregates-and-services: >-
+            A UbiquitousLanguage holds assertion PlacedRules only on DomainTerms
+            classified as an Aggregate or a Domain Service.
+          invariants-only-on-aggregates-and-values: >-
+            A UbiquitousLanguage holds invariant PlacedRules only on DomainTerms
+            classified as an Aggregate or a Value Object.
+          names-are-unique: >-
+            A UbiquitousLanguage never holds two DomainTerms in the same bounded
+            context whose names differ only in letter case or spacing.
+          placements-stay-in-the-language: >-
+            A UbiquitousLanguage never classifies a DomainTerm in relation to a
+            DomainTerm outside that language.
+          relations-fit-their-kind: >-
+            A UbiquitousLanguage relates a DomainTerm only to a term of the kind
+            that relationship takes, never to the term itself.
+          relations-stay-in-one-bounded-context: >-
+            A UbiquitousLanguage relates a DomainTerm only to terms in its own
+            bounded context, apart from the bounded context itself and an Entity's
+            Aggregate.
+          rule-keys-are-unique-per-term: >-
+            A UbiquitousLanguage never gives two PlacedRules of one DomainTerm the
+            same key.
+          proposed-terms-keep-their-proposal: >-
+            A UbiquitousLanguage keeps the TermProposal of every proposed
+            DomainTerm.
+        assertions:
+          classifying-keeps-acceptance:
+            on: Classify
+            statement: Classifying a DomainTerm never changes whether it is accepted or proposed.
+          recording-requires-a-classification:
+            on: Record
+            statement: A proposed DomainTerm is recorded in the vocabulary only once it is classified.
+          proposing-never-accepts:
+            on: Propose
+            statement: A proposed DomainTerm is never accepted by proposing it.
+          proposing-requires-a-definition:
+            on: Propose
+            statement: A DomainTerm is proposed only with a definition.
+          proposing-requires-a-name:
+            on: Propose
+            statement: A DomainTerm is proposed only with a name.
+    value_objects:
+      Classification:
+        definition: >-
+          A DomainTerm's TermKind and its modeled relationships to other
+          DomainTerms: the bounded context it belongs to, an Entity's owning
+          Aggregate, the identity Value Object of an Aggregate or Entity, and the
+          Aggregate that raises a Domain Event. Placing a term in a bounded context
+          is never required. Two Classifications are equal when their kind and
+          relationships are equal.
+        invariants:
+          placement-fits-the-kind: A Classification holds only the placements its TermKind takes.
+      FeatureId:
+        definition: The identity of one Feature; two are equal when they are the same identifier.
+      PlacedRule:
+        definition: >-
+          A Rule from a Feature placed on the DomainTerm it belongs to, either as
+          one of the term's invariants, which hold at all times, or as an assertion
+          on one of the term's operations. It carries a short key, the statement in
+          the team's own words, and for an assertion the operation it is on.
+        invariants:
+          assertion-names-its-operation: A PlacedRule that is an assertion always names the operation it is on.
+          has-a-statement: A PlacedRule has a nonempty statement.
+      ProjectId:
+        definition: The identity of one Project; two are equal when they are the same identifier.
+      ProjectPath:
+        definition: >-
+          The folder on disk that holds a Project's code and its recorded domain.
+          BWrite runs inside the Project, started in that folder or in a container
+          where it is mounted, so the path is where BWrite was started unless the
+          author names another folder BWrite was given. Two are equal when they
+          name the same folder.
+      QualifiedName:
+        definition: >-
+          A DomainTerm's name preceded by the names of the terms it sits under,
+          outermost first and joined with dots, such as Sales.Order.Order Line, or
+          Sales.Order Status.Shipped for one value of a Value Object term.
+          An author may use it as the wording of an occurrence.
+      TermId:
+        definition: >-
+          The identity of one DomainTerm within its UbiquitousLanguage, made from
+          the bounded context it sits in and its name, because a VocabularyFile
+          names a term by nothing else. Two are equal when the context and the
+          name are the same.
+      TermKind:
+        definition: >-
+          The Domain-Driven Design building block a DomainTerm is, as arclint
+          defines it: Bounded Context, Aggregate, Entity, Value Object, Domain
+          Event, Domain Service, or Specification. An Aggregate is named for its
+          root entity and stands for both, so the root needs no term of its own.
+      TermProposal:
+        definition: >-
+          Where a proposed DomainTerm came from: the Feature and the exact text it
+          was selected from, and when it was proposed.
+      TermReference:
+        definition: >-
+          One occurrence of text in a Feature tied on purpose to the DomainTerm it
+          means. The occurrence is read as naming the term, as one value of a Value
+          Object term (shipped as a value of Order Status), or as stating one of the
+          term's PlacedRules. It applies to that occurrence only, never to other
+          text spelled the same, and is equal to another with the same range, term,
+          and reading.
+        aliases: [association]
+      VocabularyFile:
+        definition: >-
+          The file at a ProjectPath that keeps a Project's UbiquitousLanguage, in
+          one of the formats BWrite reads and writes. arclint's domain.arclint.yaml
+          comes first and is read and changed only through arclint; BWrite's own
+          ubiquitous-language.bwrite.yaml is read and changed by BWrite and also
+          keeps proposed DomainTerms, which arclint's format has no place for. A
+          folder set up for arclint uses arclint's file; any other uses BWrite's.
+          Two are equal when they are the same file in the same format.

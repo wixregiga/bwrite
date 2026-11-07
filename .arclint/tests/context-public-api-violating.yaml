@@ -1,0 +1,25 @@
+rule: context-public-api
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0"}}'
+  domain.arclint.yaml: "version: 1\nproject: fixture\ncontexts:\n  authoring:\n    definition: Writing and revising documents.\n    aggregates:\n      Document:\n        definition: A document being written.\n        identity: Document Id\n    value_objects:\n      Document Id:\n        definition: Identity of a document.\n      Line Kind:\n        definition: What a line of a document is.\n    events:\n      Document Renamed:\n        definition: A document received a new title.\n  project_files:\n    definition: The files of the user's project as the server sees them.\n"
+  src/contexts/authoring/index.ts: 'export const value = 1;
+
+    '
+  src/contexts/authoring/domain/document.ts: 'export const value = 1;
+
+    '
+  src/contexts/authoring/domain/document-id.ts: 'export const value = 1;
+
+    '
+  src/contexts/authoring/domain/line-kind.ts: 'export const value = 1;
+
+    '
+  src/contexts/authoring/domain/document-renamed.ts: 'export const value = 1;
+
+    '
+  src/contexts/project-files/domain/project-file.ts: 'export const value = 1;
+
+    '
+expect:
+- path: src/contexts/project-files/index.ts
+  message: Zone "public_api" is missing a required file matching "src/contexts/project-files/index.ts"

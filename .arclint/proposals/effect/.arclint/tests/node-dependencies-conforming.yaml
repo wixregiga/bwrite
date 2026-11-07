@@ -1,0 +1,37 @@
+rule: node-dependencies
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0", "effect": "4.0.2", "@effect/platform-node": "4.0.2", "@effect/platform-browser": "4.0.2", "effector": "23.4.4"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0", "@effect/vitest": "4.0.2"}}'
+  src/contexts/authoring/node/file-document-repository.ts: 'import { value as v0 } from ''../domain/document'';
+
+    import { value as v1 } from ''../application/save-document'';
+
+    import { value as v2 } from ''../formats/yaml-document-format'';
+
+    import { value as v3 } from ''../contracts/document-payload'';
+
+    import { value as v4 } from ''../../../shared/transport/envelope'';
+
+    import { value as v5 } from ''../../../../server/shared/atomic-write'';
+
+    export const value = v0 + v1 + v2 + v3 + v4 + v5;
+
+    '
+  src/contexts/authoring/domain/document.ts: 'export const value = 1;
+
+    '
+  src/contexts/authoring/application/save-document.ts: 'export const value = 1;
+
+    '
+  src/contexts/authoring/formats/yaml-document-format.ts: 'export const value = 1;
+
+    '
+  src/contexts/authoring/contracts/document-payload.ts: 'export const value = 1;
+
+    '
+  src/shared/transport/envelope.ts: 'export const value = 1;
+
+    '
+  server/shared/atomic-write.ts: 'export const value = 1;
+
+    '
+expect: []

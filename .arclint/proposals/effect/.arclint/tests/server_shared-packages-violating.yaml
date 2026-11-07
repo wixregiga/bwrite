@@ -1,0 +1,14 @@
+rule: server_shared-packages
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0", "effect": "4.0.2", "@effect/platform-node": "4.0.2", "@effect/platform-browser": "4.0.2", "effector": "23.4.4"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0", "@effect/vitest": "4.0.2"}}'
+  server/shared/atomic-write.ts: 'import * as m0 from ''effect/Effect'';
+
+    import * as m1 from ''effect/process/ChildProcess'';
+
+    export const value = 1;
+
+    '
+expect:
+- path: server/shared/atomic-write.ts
+  line: 2
+  message: 'Package "effect/process/ChildProcess" is not declared for server_shared (declared: effect/Effect, effect/Layer, effect/FileSystem, @effect/platform-node/NodeFileSystem)'

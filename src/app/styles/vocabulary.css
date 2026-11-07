@@ -1,0 +1,117 @@
+/* The project's VocabularyFile: which file, its state, planned steps, and arclint's rules */
+
+.bw-panel__file {
+  margin-top: 2px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.bw-panel__status {
+  margin: 8px 2px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  font-size: 13px;
+}
+
+.bw-panel__status p {
+  margin: 0 0 8px;
+}
+
+.bw-panel__status p:last-child {
+  margin-bottom: 0;
+}
+
+.bw-panel__status.is-error {
+  border-color: var(--danger);
+  background: var(--danger-wash);
+  color: var(--ink);
+}
+
+.bw-rule-list,
+.bw-question-list,
+.bw-plan-steps {
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.bw-rule-list__item,
+.bw-question-list__item {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.bw-rule-list__head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bw-rule-list__id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.bw-rule-list__proposition,
+.bw-question-list__item p {
+  margin: 4px 0 0;
+  color: var(--ink-soft);
+}
+
+.bw-question-list__meta {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.bw-badge--error {
+  background: var(--danger-wash);
+  color: var(--danger);
+}
+
+.bw-badge--quiet {
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+}
+
+.bw-detail__record {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.bw-plan-steps code {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bw-path-field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.bw-path-field input {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+}

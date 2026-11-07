@@ -1,0 +1,17 @@
+rule: public_api-platform
+files:
+  package.json: '{"dependencies": {"react": "19.2.0", "react-dom": "19.2.0", "yaml": "2.8.1", "@codemirror/state": "6.5.2", "@codemirror/view": "6.38.6", "@lezer/common": "1.2.3", "@replit/codemirror-vim": "6.3.0"}, "devDependencies": {"vitest": "3.2.4", "@playwright/test": "1.56.1", "@testing-library/react": "16.3.0"}}'
+  src/contexts/authoring/index.ts: 'import * as m0 from ''yaml'';
+
+    import * as m1 from ''node:fs/promises'';
+
+    export const value = 1;
+
+    '
+expect:
+- path: src/contexts/authoring/index.ts
+  line: 1
+  message: external import "yaml" is forbidden for Zone "public_api"
+- path: src/contexts/authoring/index.ts
+  line: 2
+  message: standard-library import "node:fs/promises" is forbidden for Zone "public_api"
