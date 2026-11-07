@@ -6,7 +6,7 @@ description = "Install dependencies and the Chromium build Playwright uses"
 run = ["npm ci", "npx playwright install chromium"]
 
 [tasks.dev]
-description = "Start the BWrite prototype on the Vite dev server"
+description = "Start BWrite on the Vite dev server with live reload"
 run = "npm run dev"
 
 [tasks.bwrite]
@@ -28,11 +28,11 @@ run = "npm run check"
 
 [tasks."vocab:sync"]
 description = "Refresh BWrite's snapshot of ArcLint's DDD vocabulary from the installed arclint"
-run = "node scripts/arclintVocabulary.mjs sync"
+run = "node scripts/arclint-vocabulary.mjs sync"
 
 [tasks."vocab:check"]
 description = "Fail when BWrite's snapshot of ArcLint's DDD vocabulary differs from the installed arclint"
-run = "node scripts/arclintVocabulary.mjs check"
+run = "node scripts/arclint-vocabulary.mjs check"
 
 [tasks."check:extensions"]
 description = "Type-check the arclint SDK extensions under strict TypeScript"
@@ -48,27 +48,27 @@ run = "arclint check ."
 
 [tasks."install:stage2"]
 description = "Install the pinned Effect dependencies of the inactive Stage 2 validation"
-dir = ".arclint/moonshot/effect/validation/effect-api"
+dir = ".arclint/proposals/effect/validation/effect-api"
 run = "npm ci --no-audit --no-fund --strict-peer-deps"
 
 [tasks."check:stage2-delta"]
 description = "Prove the inactive Stage 2 ruleset is Stage 1 plus the declared Effect delta"
-run = "node .arclint/moonshot/effect/scripts/check-stage2-delta.ts"
+run = "node .arclint/proposals/effect/scripts/check-stage2-delta.ts"
 
 [tasks."check:unstable-symbols"]
 description = "Prove effect-stable-core matches the installed Effect declarations"
 depends = ["install:stage2"]
-run = "node .arclint/moonshot/effect/scripts/unstable-symbols.ts .arclint/moonshot/effect/validation/effect-api/node_modules/effect --check"
+run = "node .arclint/proposals/effect/scripts/unstable-symbols.ts .arclint/proposals/effect/validation/effect-api/node_modules/effect --check"
 
 [tasks."test:stage2"]
 description = "Run the Stage 2 rule tests (the symlinked extensions need a cold cache)"
-dir = ".arclint/moonshot/effect"
+dir = ".arclint/proposals/effect"
 run = ["rm -rf .arclint/cache", "arclint rules test"]
 
 [tasks."test:effect-api"]
 description = "Compile and run one complete Effect 4.0.2 path against real files"
 depends = ["install:stage2"]
-dir = ".arclint/moonshot/effect/validation/effect-api"
+dir = ".arclint/proposals/effect/validation/effect-api"
 run = ["npx --no-install tsc -p tsconfig.json", "node --test workflow-source.test.ts"]
 
 [tasks.gates]

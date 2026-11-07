@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { id } from "../../../../tests/support/unit/language-builders";
 
 /** `arclint domain schema` as recorded beside the acceptance suites. */
-const schema = JSON.parse(readFileSync(new URL("../../../../tests/fixtures/arclint/domainSchema.json", import.meta.url), "utf8"));
+const schema = JSON.parse(readFileSync(new URL("../../../../tests/fixtures/arclint/domain-schema.json", import.meta.url), "utf8"));
 
 type SchemaDef = { required?: string[]; properties: Record<string, { $ref?: string; additionalProperties?: { $ref?: string } }> };
 const defs = schema.$defs as unknown as Record<string, SchemaDef>;

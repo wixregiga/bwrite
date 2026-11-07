@@ -1,4 +1,4 @@
-# Stage 2: Effect moonshot (inactive)
+# Stage 2: Effect ruleset (inactive)
 
 This folder holds Stage 2 of the architecture ruleset. It is not active: `arclint check .` reads only `rules.arclint.yaml` at the repository root (Stage 1), and its `scan` excludes `.arclint/**`.
 

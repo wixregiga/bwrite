@@ -3,8 +3,7 @@ import type { TermId } from "./term-id";
 import type { TermProposal } from "./term-proposal";
 import type { PlacedRule } from "./placed-rule";
 
-// [ASSUMPTION] Length limits are prototype choices: a term name is a short noun
-// phrase, and definitions are bounded to keep browser storage use predictable.
+// A term name is a short noun phrase, and a definition is a readable paragraph.
 export const MAX_TERM_NAME_LENGTH = 80;
 export const MAX_DEFINITION_LENGTH = 2000;
 

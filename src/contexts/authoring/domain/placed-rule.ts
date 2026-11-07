@@ -31,7 +31,7 @@ export interface PlacedRuleProblems {
   operation?: string;
 }
 
-// [ASSUMPTION] Prototype limits: a key is a short label, a statement one or two sentences.
+// A key is a short label, and a statement is one or two sentences.
 export const MAX_RULE_KEY_LENGTH = 60;
 export const MAX_STATEMENT_LENGTH = 500;
 export const MAX_OPERATION_LENGTH = 80;

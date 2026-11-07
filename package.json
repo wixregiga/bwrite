@@ -2,7 +2,7 @@
   "name": "bwrite",
   "private": true,
   "version": "0.1.0",
-  "description": "BWrite: domain-aware feature editor prototype",
+  "description": "Write a product's features in its own ubiquitous language",
   "license": "MPL-2.0",
   "type": "module",
   "bin": {

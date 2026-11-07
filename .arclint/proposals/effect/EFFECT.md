@@ -1,4 +1,4 @@
-# Stage 2: Effect v4 moonshot
+# Stage 2: Effect v4 ruleset
 
 `rules.effect.arclint.yaml` is Stage 1 plus a declared delta (7 Rules replaced, 3 removed, 12 added). `scripts/check-stage2-delta.ts` proves nothing else differs. Adopt it after Stage 1 is green by replacing `rules.arclint.yaml` with it.
 
@@ -22,7 +22,7 @@ Stability by module in 4.0.2 (stable/unstable declarations):
 | --- | --- |
 | Effect 523/4, Context 50/0, Layer 100/0, Data 13/0, ManagedRuntime 5/0, Exit 40/0, Option 134/0, Stream 552/6, Schema 478/132 | FileSystem 0/15, Path 0/6, http/HttpClient 0/97, http/FetchHttpClient 0/4, http/HttpRouter 0/44, http/HttpServer 0/20, process/ChildProcess 0/41 |
 
-The unstable tier is exactly the IO the app needs. Hexagonal layering already confines IO to adapters, so the moonshot costs no architecture: unstable modules live only in `node`, `server_shared` and `server_app`; process-neutral segments use the stable core.
+The unstable tier is exactly the IO the app needs. Hexagonal layering already confines IO to adapters, so adopting Effect costs no architectural change: unstable modules live only in `node`, `server_shared` and `server_app`; process-neutral segments use the stable core.
 
 Stage 2 admits only modules that `validation/effect-api` compiles and runs against 4.0.2: `Effect`, `Context`, `Data`, `Exit`, `Option`, `Layer`, `Schema`, `ManagedRuntime`, `FileSystem` and `@effect/platform-node/NodeFileSystem`. `effect/http/*`, `effect/process/*`, `effect/Stream` and `@effect/platform-browser/*` are not admitted yet: browser adapters wrap the platform `fetch`, `EventSource` and `localStorage` with `Effect.tryPromise`, and Node HTTP, SSE and CLI adapters keep Node built-ins. Each module family joins its allow-list together with a compiled, tested path that uses it (for example one SSE endpoint served by `HttpRouter` and consumed in the browser).
 

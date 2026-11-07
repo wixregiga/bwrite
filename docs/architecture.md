@@ -1,6 +1,6 @@
 # Layout: domain-driven vertical slices
 
-The rules in `rules.arclint.yaml` enforce this layout. The layout was designed from first principles for one goal: a person or an LLM agent opening this repository in five years can find where a responsibility lives from its name alone, and cannot put it anywhere else.
+The rules in `rules.arclint.yaml` enforce this layout. Its goal is that anyone opening the repository, a person or a coding agent, finds where a responsibility lives from its name alone and cannot put it anywhere else.
 
 ```text
 src/
@@ -85,13 +85,19 @@ Protected Zones (`imported_by`): `browser` only from `app`; `node` only from `se
 | Recorded vocabulary maps to folders and files | `ddd/recorded-contexts`, `structure` rules expanded from `domain.arclint.yaml` |
 | Aggregate roots, invariants, value objects, context-map direction | arclint built-in domain rules over the recorded domain |
 | File cycles, placement, test placement | `ddd/file-cycles`, `ddd/placement`, `ddd/test-placement` |
-| Strict types, DOM versus Node globals | The application's per-process `tsconfig` (browser `lib: ["DOM"]`, Node `types: ["node"]`, process-neutral segments with neither); not arclint |
+| Strict types | `tsconfig.json` with `strict`; not arclint |
 | Behavior, IO failures, user-visible outcomes | Vitest and Playwright against real files, HTTP and the browser |
 
-Known gaps are listed in `CHANGES.md` with the arclint feature each one needs.
+## Known gaps
+
+- DOM versus Node globals: one `tsconfig.json` types `src`, `server` and `tests` with both `DOM` and `node`, so a Node global in browser code, or a DOM global in a process-neutral segment, type-checks. A `tsconfig` per process would close it.
+- Excluding a file from one rule does not drop its import edges from the Zone graph, so unit tests are excluded at `scan` level instead (decision 10).
+- Structure rules cannot scope a glob to one recorded context, so `aggregate-files` and its siblings match `src/contexts/*/domain/`.
+- arclint has no check for side-effect-free modules or for type-only imports, so neither is enforced.
+- arclint reports every extension rule as heuristic, including the ones that are exact.
 
 ## Sources
 
 - FSD layers, slices and public API: https://feature-sliced.design/docs/reference/layers, https://feature-sliced.design/docs/reference/slices-segments, https://feature-sliced.design/docs/reference/public-api
-- Vertical slices with hexagonal layers and a composition Zone: `reference/arclint/vertical/0.1.0/pattern.yaml` in the sandbox (Go only, used as a model).
+- Vertical slices with hexagonal layers and a composition Zone: arclint's embedded `arclint/vertical@0.1.0` Pattern (`arclint patterns`; Go only, used as a model).
 - Rule expressiveness: `rules.arclint.schema.json` and `arclint domain schema` (arclint 0.1.0-beta.1).

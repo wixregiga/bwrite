@@ -3,7 +3,7 @@ import { isRuleKey } from "./placed-rule";
 import { RefusalError } from "./refusal";
 import { cleanTermName, hasWordCharacter } from "./terms";
 
-// [ASSUMPTION] Prototype limit, matching the term name limit: a value is a short label.
+// A value is a short label, bounded like a term name.
 export const MAX_VALUE_LENGTH = 80;
 
 /**

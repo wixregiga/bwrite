@@ -3,7 +3,7 @@ import { RefusalError, failure, success, type Result } from "./refusal";
 import { cleanTermName } from "./terms";
 import { projectPathOf, type ProjectPath } from "./project-path";
 
-// [ASSUMPTION] Prototype limit, matching the term name limit: a project name is a short label.
+// A project name is a short label, bounded like a term name.
 export const MAX_PROJECT_NAME_LENGTH = 80;
 
 export const UNTITLED_PROJECT = "Untitled project";
